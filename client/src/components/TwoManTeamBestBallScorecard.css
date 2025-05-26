@@ -209,6 +209,25 @@
   color: white;
 }
 
+/* Match status row */
+.match-status {
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  background: linear-gradient(135deg, var(--aviator-bg) 0%, white 50%, var(--producer-bg) 100%);
+  color: hsl(var(--foreground));
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 2px solid hsl(var(--border));
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.match-status-bg {
+  background: linear-gradient(135deg, var(--aviator-bg) 0%, white 50%, var(--producer-bg) 100%);
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+}
+
 /* CSS Variables for team colors */
 :root {
   --aviator-bg: #dbeafe;

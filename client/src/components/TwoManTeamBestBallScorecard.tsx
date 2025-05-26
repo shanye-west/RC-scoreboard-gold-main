@@ -155,6 +155,164 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
     const aviatorPlayers = localPlayerScores.filter(p => p.team === 'aviator');
     const producerPlayers = localPlayerScores.filter(p => p.team === 'producer');
 
+    // Helper function to render a player row
+    const renderPlayerRow = (player: PlayerScore) => (
+      <React.Fragment key={`player-${player.playerId}`}>
+        <div className={`player-name ${player.team}`}>{player.playerName}</div>
+        <div className="player-handicap">{player.handicapStrokes.reduce((a, b) => a + b, 0)}</div>
+        {frontNine.map((_, holeIdx) => (
+          <div key={`${player.playerId}-front-${holeIdx}`} 
+               className={`score-input-cell ${player.isBestBall[holeIdx] ? 'best-score' : ''}`}>
+            <Input
+              type="number"
+              min="1"
+              max="15"
+              value={player.scores[holeIdx] ?? ''}
+              disabled={locked}
+              onChange={(e) => handleScoreChange(
+                localPlayerScores.findIndex(p => p.playerId === player.playerId), 
+                holeIdx, 
+                e.target.value
+              )}
+              className="score-input"
+            />
+            {player.handicapStrokes[holeIdx] > 0 && (
+              <span className="handicap-dot">•</span>
+            )}
+            {player.netScores[holeIdx] !== null && (
+              <span className="net-score">{player.netScores[holeIdx]}</span>
+            )}
+          </div>
+        ))}
+        <div className="player-total">
+          {frontNine.reduce((sum, _, i) => {
+            const net = player.netScores[i];
+            return sum + (net !== null ? net : 0);
+          }, 0) || ''}
+        </div>
+        {backNine.map((_, holeIdx) => {
+          const actualHoleIdx = holeIdx + 9;
+          return (
+            <div key={`${player.playerId}-back-${holeIdx}`} 
+                 className={`score-input-cell ${player.isBestBall[actualHoleIdx] ? 'best-score' : ''}`}>
+              <Input
+                type="number"
+                min="1"
+                max="15"
+                value={player.scores[actualHoleIdx] ?? ''}
+                disabled={locked}
+                onChange={(e) => handleScoreChange(
+                  localPlayerScores.findIndex(p => p.playerId === player.playerId), 
+                  actualHoleIdx, 
+                  e.target.value
+                )}
+                className="score-input"
+              />
+              {player.handicapStrokes[actualHoleIdx] > 0 && (
+                <span className="handicap-dot">•</span>
+              )}
+              {player.netScores[actualHoleIdx] !== null && (
+                <span className="net-score">{player.netScores[actualHoleIdx]}</span>
+              )}
+            </div>
+          );
+        })}
+        <div className="player-total">
+          {backNine.reduce((sum, _, i) => {
+            const net = player.netScores[i + 9];
+            return sum + (net !== null ? net : 0);
+          }, 0) || ''}
+        </div>
+        <div className="player-total">
+          {holes.reduce((sum, _, i) => {
+            const net = player.netScores[i];
+            return sum + (net !== null ? net : 0);
+          }, 0) || ''}
+        </div>
+      </React.Fragment>
+    );
+
+    // Helper function to render team total row
+    const renderTeamTotalRow = (team: 'aviator' | 'producer', totals: typeof aviatorTotals) => {
+      const teamPlayers = team === 'aviator' ? aviatorPlayers : producerPlayers;
+      const teamClass = team === 'aviator' ? 'aviators' : 'producers';
+      const teamName = team === 'aviator' ? 'THE AVIATORS' : 'THE PRODUCERS';
+      
+      return (
+        <React.Fragment key={`team-total-${team}`}>
+          <div className={`team-total ${teamClass}`}>{teamName}</div>
+          <div className="empty"></div>
+          {frontNine.map((_, holeIdx) => {
+            const bestScore = teamPlayers.reduce((best, player) => {
+              const net = player.netScores[holeIdx];
+              if (net !== null && (best === null || net < best)) {
+                return net;
+              }
+              return best;
+            }, null as number | null);
+            return (
+              <div key={`${team}-team-front-${holeIdx}`} className="team-total">
+                {bestScore !== null ? bestScore : ''}
+              </div>
+            );
+          })}
+          <div className="team-total">{totals.frontTotal || ''}</div>
+          {backNine.map((_, holeIdx) => {
+            const actualHoleIdx = holeIdx + 9;
+            const bestScore = teamPlayers.reduce((best, player) => {
+              const net = player.netScores[actualHoleIdx];
+              if (net !== null && (best === null || net < best)) {
+                return net;
+              }
+              return best;
+            }, null as number | null);
+            return (
+              <div key={`${team}-team-back-${holeIdx}`} className="team-total">
+                {bestScore !== null ? bestScore : ''}
+              </div>
+            );
+          })}
+          <div className="team-total">{totals.backTotal || ''}</div>
+          <div className="team-total">{totals.total || ''}</div>
+        </React.Fragment>
+      );
+    };
+
+    // Helper function to render match status row
+    const renderMatchStatusRow = () => {
+      const aviatorTotal = aviatorTotals.total || 0;
+      const producerTotal = producerTotals.total || 0;
+      let status = '';
+      
+      if (aviatorTotal === 0 && producerTotal === 0) {
+        status = 'MATCH EVEN';
+      } else if (aviatorTotal < producerTotal) {
+        const diff = producerTotal - aviatorTotal;
+        status = `AVIATORS UP ${diff}`;
+      } else if (producerTotal < aviatorTotal) {
+        const diff = aviatorTotal - producerTotal;
+        status = `PRODUCERS UP ${diff}`;
+      } else {
+        status = 'MATCH EVEN';
+      }
+
+      return (
+        <React.Fragment key="match-status">
+          <div className="match-status">{status}</div>
+          <div className="empty match-status-bg"></div>
+          {Array(frontNine.length).fill(null).map((_, i) => (
+            <div key={`match-status-front-${i}`} className="empty match-status-bg"></div>
+          ))}
+          <div className="empty match-status-bg"></div>
+          {Array(backNine.length).fill(null).map((_, i) => (
+            <div key={`match-status-back-${i}`} className="empty match-status-bg"></div>
+          ))}
+          <div className="empty match-status-bg"></div>
+          <div className="empty match-status-bg"></div>
+        </React.Fragment>
+      );
+    };
+
     return (
       <div className="scorecard-container">
         <div className="scorecard-grid">
@@ -209,275 +367,29 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
           <div className="empty"></div>
           <div className="empty"></div>
 
-          {/* Aviator Team Header */}
-          <div className="team-header aviators">THE AVIATORS</div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-          <div className="empty aviator-bg"></div>
-
-          {/* Aviator Players */}
-          {aviatorPlayers.map((player, playerIdx) => (
-            <React.Fragment key={`aviator-${player.playerId}`}>
-              <div className="player-name aviator">{player.playerName}</div>
-              <div className="player-handicap">{player.handicapStrokes.reduce((a, b) => a + b, 0)}</div>
-              {frontNine.map((_, holeIdx) => (
-                <div key={`aviator-${player.playerId}-front-${holeIdx}`} 
-                     className={`score-input-cell ${player.isBestBall[holeIdx] ? 'best-score' : ''}`}>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="15"
-                    value={player.scores[holeIdx] ?? ''}
-                    disabled={locked}
-                    onChange={(e) => handleScoreChange(
-                      localPlayerScores.findIndex(p => p.playerId === player.playerId), 
-                      holeIdx, 
-                      e.target.value
-                    )}
-                    className="score-input"
-                  />
-                  {player.handicapStrokes[holeIdx] > 0 && (
-                    <span className="handicap-dot">•</span>
-                  )}
-                  {player.netScores[holeIdx] !== null && (
-                    <span className="net-score">{player.netScores[holeIdx]}</span>
-                  )}
-                </div>
-              ))}
-              <div className="player-total">
-                {frontNine.reduce((sum, _, i) => {
-                  const net = player.netScores[i];
-                  return sum + (net !== null ? net : 0);
-                }, 0) || ''}
-              </div>
-              {backNine.map((_, holeIdx) => {
-                const actualHoleIdx = holeIdx + 9;
-                return (
-                  <div key={`aviator-${player.playerId}-back-${holeIdx}`} 
-                       className={`score-input-cell ${player.isBestBall[actualHoleIdx] ? 'best-score' : ''}`}>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="15"
-                      value={player.scores[actualHoleIdx] ?? ''}
-                      disabled={locked}
-                      onChange={(e) => handleScoreChange(
-                        localPlayerScores.findIndex(p => p.playerId === player.playerId), 
-                        actualHoleIdx, 
-                        e.target.value
-                      )}
-                      className="score-input"
-                    />
-                    {player.handicapStrokes[actualHoleIdx] > 0 && (
-                      <span className="handicap-dot">•</span>
-                    )}
-                    {player.netScores[actualHoleIdx] !== null && (
-                      <span className="net-score">{player.netScores[actualHoleIdx]}</span>
-                    )}
-                  </div>
-                );
-              })}
-              <div className="player-total">
-                {backNine.reduce((sum, _, i) => {
-                  const net = player.netScores[i + 9];
-                  return sum + (net !== null ? net : 0);
-                }, 0) || ''}
-              </div>
-              <div className="player-total">
-                {holes.reduce((sum, _, i) => {
-                  const net = player.netScores[i];
-                  return sum + (net !== null ? net : 0);
-                }, 0) || ''}
-              </div>
-            </React.Fragment>
-          ))}
-
-          {/* Aviator Team Total */}
-          <div className="team-total aviators">TEAM TOTAL</div>
-          <div className="empty"></div>
-          {frontNine.map((_, holeIdx) => {
-            const bestScore = aviatorPlayers.reduce((best, player) => {
-              const net = player.netScores[holeIdx];
-              if (net !== null && (best === null || net < best)) {
-                return net;
-              }
-              return best;
-            }, null as number | null);
-            return (
-              <div key={`aviator-team-front-${holeIdx}`} className="team-total">
-                {bestScore !== null ? bestScore : ''}
-              </div>
-            );
-          })}
-          <div className="team-total">{aviatorTotals.frontTotal || ''}</div>
-          {backNine.map((_, holeIdx) => {
-            const actualHoleIdx = holeIdx + 9;
-            const bestScore = aviatorPlayers.reduce((best, player) => {
-              const net = player.netScores[actualHoleIdx];
-              if (net !== null && (best === null || net < best)) {
-                return net;
-              }
-              return best;
-            }, null as number | null);
-            return (
-              <div key={`aviator-team-back-${holeIdx}`} className="team-total">
-                {bestScore !== null ? bestScore : ''}
-              </div>
-            );
-          })}
-          <div className="team-total">{aviatorTotals.backTotal || ''}</div>
-          <div className="team-total">{aviatorTotals.total || ''}</div>
-
-          {/* Producer Team Header */}
-          <div className="team-header producers">THE PRODUCERS</div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-          <div className="empty producer-bg"></div>
-
-          {/* Producer Players */}
-          {producerPlayers.map((player, playerIdx) => (
-            <React.Fragment key={`producer-${player.playerId}`}>
-              <div className="player-name producer">{player.playerName}</div>
-              <div className="player-handicap">{player.handicapStrokes.reduce((a, b) => a + b, 0)}</div>
-              {frontNine.map((_, holeIdx) => (
-                <div key={`producer-${player.playerId}-front-${holeIdx}`} 
-                     className={`score-input-cell ${player.isBestBall[holeIdx] ? 'best-score' : ''}`}>
-                  <Input
-                    type="number"
-                    min="1"
-                    max="15"
-                    value={player.scores[holeIdx] ?? ''}
-                    disabled={locked}
-                    onChange={(e) => handleScoreChange(
-                      localPlayerScores.findIndex(p => p.playerId === player.playerId), 
-                      holeIdx, 
-                      e.target.value
-                    )}
-                    className="score-input"
-                  />
-                  {player.handicapStrokes[holeIdx] > 0 && (
-                    <span className="handicap-dot">•</span>
-                  )}
-                  {player.netScores[holeIdx] !== null && (
-                    <span className="net-score">{player.netScores[holeIdx]}</span>
-                  )}
-                </div>
-              ))}
-              <div className="player-total">
-                {frontNine.reduce((sum, _, i) => {
-                  const net = player.netScores[i];
-                  return sum + (net !== null ? net : 0);
-                }, 0) || ''}
-              </div>
-              {backNine.map((_, holeIdx) => {
-                const actualHoleIdx = holeIdx + 9;
-                return (
-                  <div key={`producer-${player.playerId}-back-${holeIdx}`} 
-                       className={`score-input-cell ${player.isBestBall[actualHoleIdx] ? 'best-score' : ''}`}>
-                    <Input
-                      type="number"
-                      min="1"
-                      max="15"
-                      value={player.scores[actualHoleIdx] ?? ''}
-                      disabled={locked}
-                      onChange={(e) => handleScoreChange(
-                        localPlayerScores.findIndex(p => p.playerId === player.playerId), 
-                        actualHoleIdx, 
-                        e.target.value
-                      )}
-                      className="score-input"
-                    />
-                    {player.handicapStrokes[actualHoleIdx] > 0 && (
-                      <span className="handicap-dot">•</span>
-                    )}
-                    {player.netScores[actualHoleIdx] !== null && (
-                      <span className="net-score">{player.netScores[actualHoleIdx]}</span>
-                    )}
-                  </div>
-                );
-              })}
-              <div className="player-total">
-                {backNine.reduce((sum, _, i) => {
-                  const net = player.netScores[i + 9];
-                  return sum + (net !== null ? net : 0);
-                }, 0) || ''}
-              </div>
-              <div className="player-total">
-                {holes.reduce((sum, _, i) => {
-                  const net = player.netScores[i];
-                  return sum + (net !== null ? net : 0);
-                }, 0) || ''}
-              </div>
-            </React.Fragment>
-          ))}
-
-          {/* Producer Team Total */}
-          <div className="team-total producers">TEAM TOTAL</div>
-          <div className="empty"></div>
-          {frontNine.map((_, holeIdx) => {
-            const bestScore = producerPlayers.reduce((best, player) => {
-              const net = player.netScores[holeIdx];
-              if (net !== null && (best === null || net < best)) {
-                return net;
-              }
-              return best;
-            }, null as number | null);
-            return (
-              <div key={`producer-team-front-${holeIdx}`} className="team-total">
-                {bestScore !== null ? bestScore : ''}
-              </div>
-            );
-          })}
-          <div className="team-total">{producerTotals.frontTotal || ''}</div>
-          {backNine.map((_, holeIdx) => {
-            const actualHoleIdx = holeIdx + 9;
-            const bestScore = producerPlayers.reduce((best, player) => {
-              const net = player.netScores[actualHoleIdx];
-              if (net !== null && (best === null || net < best)) {
-                return net;
-              }
-              return best;
-            }, null as number | null);
-            return (
-              <div key={`producer-team-back-${holeIdx}`} className="team-total">
-                {bestScore !== null ? bestScore : ''}
-              </div>
-            );
-          })}
-          <div className="team-total">{producerTotals.backTotal || ''}</div>
-          <div className="team-total">{producerTotals.total || ''}</div>
+          {/* Render rows in the specific order requested:
+              1. Aviators Player 1
+              2. Aviators Player 2  
+              3. Aviators team score
+              4. Match status
+              5. Producers team score
+              6. Producers Player 1
+              7. Producers Player 2 */}
+          
+          {/* 1-2. Aviators Players */}
+          {aviatorPlayers.map((player) => renderPlayerRow(player))}
+          
+          {/* 3. Aviators Team Score */}
+          {renderTeamTotalRow('aviator', aviatorTotals)}
+          
+          {/* 4. Match Status */}
+          {renderMatchStatusRow()}
+          
+          {/* 5. Producers Team Score */}
+          {renderTeamTotalRow('producer', producerTotals)}
+          
+          {/* 6-7. Producers Players */}
+          {producerPlayers.map((player) => renderPlayerRow(player))}
         </div>
       </div>
     );
