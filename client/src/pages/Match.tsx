@@ -582,36 +582,48 @@ const Match = ({ id }: { id: number }) => {
                 par: hole.par,
                 ...(hole.id !== undefined ? { id: hole.id } : {})
               }))}
-              scores={scores || []}
-              onScoreUpdate={handleScoreUpdate}
-              matchStatus={match.status}
-              matchType={round.matchType}
+              playerScores={transformRawPlayerData(
+                (participants || []).map(p => ({
+                  id: p.playerId,
+                  name: p.playerName || `Player ${p.playerId}`,
+                  team: p.team as 'aviator' | 'producer',
+                  handicapStrokes: Array(18).fill(0) // Default handicap strokes
+                })),
+                (holes || []).map(hole => ({
+                  hole_number: hole.number
+                }))
+              )}
               locked={isLocked}
-              participants={participants}
             />
           )}
           {round?.matchType === "2-man gross" && (
             <TwoManTeamGrossScorecard
-              matchId={id}
-              holes={holes || []}
-              scores={scores || []}
-              onScoreUpdate={handleScoreUpdate}
-              matchStatus={match.status}
-              matchType={round.matchType}
+              holes={(holes || []).map(hole => ({
+                hole_number: hole.number,
+                par: hole.par,
+                ...(hole.id !== undefined ? { id: hole.id } : {})
+              }))}
+              scores={(scores || []).map(score => ({
+                holeNumber: score.holeNumber,
+                aviatorScore: score.aviatorScore,
+                producerScore: score.producerScore
+              }))}
               locked={isLocked}
-              participants={participants}
             />
           )}
           {round?.matchType === "4-man scramble" && (
             <FourManTeamScrambleScorecard
-              matchId={id}
-              holes={holes || []}
-              scores={scores || []}
-              onScoreUpdate={handleScoreUpdate}
-              matchStatus={match.status}
-              matchType={round.matchType}
+              holes={(holes || []).map(hole => ({
+                hole_number: hole.number,
+                par: hole.par,
+                ...(hole.id !== undefined ? { id: hole.id } : {})
+              }))}
+              scores={(scores || []).map(score => ({
+                holeNumber: score.holeNumber,
+                aviatorScore: score.aviatorScore,
+                producerScore: score.producerScore
+              }))}
               locked={isLocked}
-              participants={participants}
             />
           )}
         </>
