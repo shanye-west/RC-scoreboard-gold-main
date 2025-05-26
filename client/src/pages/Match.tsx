@@ -594,6 +594,10 @@ const Match = ({ id }: { id: number }) => {
                 }))
               )}
               locked={isLocked}
+              onUpdateScores={(playerScores) => {
+                // Convert player scores to the expected ScoreData format for the API
+                console.log('Player scores updated:', playerScores);
+              }}
             />
           )}
           {round?.matchType === "2-man gross" && (
