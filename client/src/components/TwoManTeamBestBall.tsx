@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 
@@ -29,6 +29,39 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
   locked = false,
   onUpdateScores,
 }) => {
+  useEffect(() => {
+    const updatedScores = playerScores.map(player => {
+      const netScores = player.scores.map((gross, idx) => {
+        return gross !== null ? gross - (player.handicapStrokes[idx] || 0) : null;
+      });
+      return { ...player, netScores };
+    });
+
+    // Determine best net per team per hole
+    holes.forEach((_, holeIdx) => {
+      const bestByTeam: { [team: string]: { net: number | null; index: number | null } } = {
+        aviator: { net: null, index: null },
+        producer: { net: null, index: null }
+      };
+
+      updatedScores.forEach((player, i) => {
+        const net = player.netScores[holeIdx];
+        if (net !== null) {
+          const best = bestByTeam[player.team];
+          if (best.net === null || net < best.net) {
+            bestByTeam[player.team] = { net, index: i };
+          }
+        }
+      });
+
+      updatedScores.forEach((player, i) => {
+        player.isBestBall[holeIdx] = bestByTeam[player.team].index === i;
+      });
+    });
+
+    onUpdateScores?.(updatedScores);
+  }, [playerScores, holes, onUpdateScores]);
+
   const handleScoreChange = (playerIndex: number, holeIndex: number, value: string) => {
     const newScores = [...playerScores];
     const score = parseInt(value, 10);
@@ -56,9 +89,9 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
           <tbody>
             {holes.map((hole, i) => (
               <tr key={i} className="border-t">
-                <td className="text-center">{hole.hole_number}</td>
+                <td className="text-center font-bold">{hole.hole_number}</td>
                 {playerScores.map((player, j) => (
-                  <td key={j} className="text-center">
+                  <td key={j} className={`text-center ${player.isBestBall[i] ? 'bg-green-100 font-bold' : ''}`}>
                     <Input
                       type="number"
                       value={player.scores[i] ?? ''}
@@ -66,7 +99,10 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
                       onChange={(e) => handleScoreChange(j, i, e.target.value)}
                     />
                     {player.handicapStrokes[i] > 0 && (
-                      <div className="text-xs text-gray-500">+{player.handicapStrokes[i]}</div>
+                      <div className="text-xs text-gray-500">-{player.handicapStrokes[i]}</div>
+                    )}
+                    {player.netScores[i] !== null && (
+                      <div className="text-xs text-blue-600">Net: {player.netScores[i]}</div>
                     )}
                   </td>
                 ))}
