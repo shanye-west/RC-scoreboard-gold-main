@@ -97,7 +97,7 @@ function captureError(err: any) {
 
   // 8) Listen on Replit’s PORT or default to 5000
   const port = Number(process.env.PORT) || 5001; // Default port 5001
-  server.listen(port, "0.0.0.0", () => {
-    log(`HTTP server listening on host 0.0.0.0, port ${port}`);
+  server.listen(port, "127.0.0.1", () => {
+    log(`HTTP server listening on host 127.0.0.1, port ${port}`);
   });
 })(); // ← Close the IIFE

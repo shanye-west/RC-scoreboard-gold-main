@@ -134,14 +134,16 @@ const Match = ({ id }: { id: number }) => {
   });
 
   // Fetch players data for match editing
-  const { data: players = [], isLoading: isPlayersLoading } = useQuery({
+  const { data: players = [], isLoading: isPlayersLoading } = useQuery<any[]>({
     queryKey: ["/api/players"],
+    initialData: [],
   });
 
   // Fetch match participants to populate selected players
-  const { data: participants = [], isLoading: isParticipantsLoading } = useQuery({
+  const { data: participants = [], isLoading: isParticipantsLoading } = useQuery<any[]>({
     queryKey: [`/api/match-players?matchId=${id}`],
     enabled: !!id,
+    initialData: [],
   });
 
   const { isAdmin } = useAuth();
@@ -575,8 +577,11 @@ const Match = ({ id }: { id: number }) => {
           {/* Match Scorecard */}
           {round?.matchType === "2-man best ball" && (
             <TwoManTeamBestBallScorecard
-              matchId={id}
-              holes={holes || []}
+              holes={(holes || []).map(hole => ({
+                hole_number: hole.number,
+                par: hole.par,
+                ...(hole.id !== undefined ? { id: hole.id } : {})
+              }))}
               scores={scores || []}
               onScoreUpdate={handleScoreUpdate}
               matchStatus={match.status}
