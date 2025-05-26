@@ -16,6 +16,28 @@ interface HoleData {
   hole_number: number;
 }
 
+interface RawPlayerData {
+  id: number;
+  name: string;
+  team: 'aviator' | 'producer';
+  handicapStrokes: number[];
+}
+
+export function transformRawPlayerData(
+  rawPlayers: RawPlayerData[],
+  holes: HoleData[]
+): PlayerScore[] {
+  return rawPlayers.map((p) => ({
+    playerId: p.id,
+    playerName: p.name,
+    team: p.team,
+    scores: Array(holes.length).fill(null),
+    netScores: Array(holes.length).fill(null),
+    isBestBall: Array(holes.length).fill(false),
+    handicapStrokes: p.handicapStrokes,
+  }));
+}
+
 interface ScorecardProps {
   holes: HoleData[];
   playerScores: PlayerScore[];

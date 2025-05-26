@@ -3,7 +3,9 @@ import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import MatchHeader from "@/components/MatchHeader";
-import EnhancedMatchScorecard from "@/components/EnhancedMatchScorecard";
+import TwoManTeamBestBallScorecard, { transformRawPlayerData } from "@/components/TwoManTeamBestBallScorecard";
+import TwoManTeamGrossScorecard from "@/components/TwoManTeamGrossScorecard";
+import FourManTeamScrambleScorecard from "@/components/FourManTeamScrambleScorecard";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronLeft, Edit, Save, Lock, Unlock } from "lucide-react";
@@ -570,17 +572,43 @@ const Match = ({ id }: { id: number }) => {
             result={match.result}
           />
 
-          {/* Enhanced Match Scorecard */}
-          <EnhancedMatchScorecard
-            matchId={id}
-            holes={holes || []}
-            scores={scores || []}
-            onScoreUpdate={handleScoreUpdate}
-            matchStatus={match.status}
-            matchType={round?.matchType || ""}
-            locked={isLocked}
-            participants={participants}
-          />
+          {/* Match Scorecard */}
+          {round?.matchType === "2-man best ball" && (
+            <TwoManTeamBestBallScorecard
+              matchId={id}
+              holes={holes || []}
+              scores={scores || []}
+              onScoreUpdate={handleScoreUpdate}
+              matchStatus={match.status}
+              matchType={round.matchType}
+              locked={isLocked}
+              participants={participants}
+            />
+          )}
+          {round?.matchType === "2-man gross" && (
+            <TwoManTeamGrossScorecard
+              matchId={id}
+              holes={holes || []}
+              scores={scores || []}
+              onScoreUpdate={handleScoreUpdate}
+              matchStatus={match.status}
+              matchType={round.matchType}
+              locked={isLocked}
+              participants={participants}
+            />
+          )}
+          {round?.matchType === "4-man scramble" && (
+            <FourManTeamScrambleScorecard
+              matchId={id}
+              holes={holes || []}
+              scores={scores || []}
+              onScoreUpdate={handleScoreUpdate}
+              matchStatus={match.status}
+              matchType={round.matchType}
+              locked={isLocked}
+              participants={participants}
+            />
+          )}
         </>
       )}
 

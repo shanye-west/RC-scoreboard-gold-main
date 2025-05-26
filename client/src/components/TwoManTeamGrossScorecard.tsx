@@ -9,7 +9,7 @@ interface HoleScore {
 }
 
 interface ScorecardProps {
-  holes: any[];
+  holes: { hole_number: number }[];
   scores: HoleScore[];
   locked?: boolean;
   onUpdateScores?: (scores: HoleScore[]) => void;
@@ -46,7 +46,7 @@ const TwoManTeamGrossScorecard: React.FC<ScorecardProps> = ({
             </tr>
           </thead>
           <tbody>
-            {holes.map((hole: any, i: number) => (
+            {holes.map((hole, i) => (
               <tr key={i} className="border-t">
                 <td className="text-center">{hole.hole_number}</td>
                 <td>
