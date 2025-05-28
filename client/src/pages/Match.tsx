@@ -288,7 +288,64 @@ const Match = ({ id }: { id: number }) => {
     },
   });
 
-  // Debounced save function
+  // Debounced save function for TwoManTeamBestBallScorecard
+  const debouncedSaveBestBallScores = useCallback((playerScores: any[]) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    saveTimeoutRef.current = setTimeout(() => {
+      console.log('Debounced best ball save triggered for:', playerScores);
+      
+      if (!playerScores || playerScores.length === 0) return;
+      
+      // Group players by team using dynamic team logic
+      const aviatorTeamId = getAviatorTeamId();
+      const producerTeamId = getProducerTeamId();
+      
+      const aviatorPlayers = playerScores.filter(p => p.teamId === aviatorTeamId);
+      const producerPlayers = playerScores.filter(p => p.teamId === producerTeamId);
+      
+      // For each hole, calculate the best ball score for each team
+      const holeCount = playerScores[0]?.scores?.length || 18;
+      
+      for (let holeIndex = 0; holeIndex < holeCount; holeIndex++) {
+        // Get best aviator net score for this hole (best ball uses net scores)
+        const aviatorNetScores = aviatorPlayers
+          .map(p => p.netScores?.[holeIndex])
+          .filter(score => score !== null && score !== undefined) as number[];
+        
+        // Get best producer net score for this hole
+        const producerNetScores = producerPlayers
+          .map(p => p.netScores?.[holeIndex])
+          .filter(score => score !== null && score !== undefined) as number[];
+        
+        const aviatorBestScore = aviatorNetScores.length > 0 ? Math.min(...aviatorNetScores) : null;
+        const producerBestScore = producerNetScores.length > 0 ? Math.min(...producerNetScores) : null;
+        
+        // Check if this hole's scores have changed from what's currently saved
+        const existingScore = scores?.find(s => s.holeNumber === holeIndex + 1);
+        const hasChanged = !existingScore || 
+          existingScore.aviatorScore !== aviatorBestScore || 
+          existingScore.producerScore !== producerBestScore;
+        
+        // Only save if scores have changed and at least one team has a score
+        if (hasChanged && (aviatorBestScore !== null || producerBestScore !== null)) {
+          const scoreData = {
+            matchId: id,
+            holeNumber: holeIndex + 1, // API expects 1-based hole numbers
+            aviatorScore: aviatorBestScore,
+            producerScore: producerBestScore,
+          };
+          
+          console.log(`Saving best ball score for hole ${holeIndex + 1}:`, scoreData);
+          updateScoreMutation.mutate(scoreData);
+        }
+      }
+    }, 1000); // Wait 1 second after last change before saving
+  }, [id, scores, updateScoreMutation, getAviatorTeamId, getProducerTeamId]);
+
+  // Debounced save function for legacy scorecards
   const debouncedSaveScores = useCallback((playerScores: any[]) => {
     if (saveTimeoutRef.current) {
       clearTimeout(saveTimeoutRef.current);
@@ -768,7 +825,7 @@ const Match = ({ id }: { id: number }) => {
                 }
               }))}
               locked={isLocked}
-              onUpdateScores={debouncedSaveScores}
+              onUpdateScores={debouncedSaveBestBallScores}
             />
           )}
           {round?.matchType === "2-man gross" && (
