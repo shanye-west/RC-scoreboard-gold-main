@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import MatchHeader from "@/components/MatchHeader";
@@ -202,6 +202,9 @@ const Match = ({ id }: { id: number }) => {
 
   const { isAdmin } = useAuth();
 
+  // Debounce timer for score saving
+  const saveTimeoutRef = useRef<NodeJS.Timeout>();
+
   // Update lock status when match data changes
   useEffect(() => {
     if (match) {
@@ -256,6 +259,58 @@ const Match = ({ id }: { id: number }) => {
       });
     },
   });
+
+  // Debounced save function
+  const debouncedSaveScores = useCallback((playerScores: any[]) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    
+    saveTimeoutRef.current = setTimeout(() => {
+      console.log('Debounced save triggered for:', playerScores);
+      
+      // Group players by team
+      const aviatorPlayers = playerScores.filter(p => p.team === 'aviator');
+      const producerPlayers = playerScores.filter(p => p.team === 'producer');
+      
+      // For each hole, calculate the best ball score for each team
+      const holeCount = playerScores[0]?.scores?.length || 0;
+      
+      for (let holeIndex = 0; holeIndex < holeCount; holeIndex++) {
+        // Get best aviator score for this hole
+        const aviatorScores = aviatorPlayers
+          .map(p => p.scores[holeIndex])
+          .filter(score => score !== null && score !== undefined) as number[];
+        
+        // Get best producer score for this hole
+        const producerScores = producerPlayers
+          .map(p => p.scores[holeIndex])
+          .filter(score => score !== undefined) as number[];
+        
+        const aviatorBestScore = aviatorScores.length > 0 ? Math.min(...aviatorScores) : null;
+        const producerBestScore = producerScores.length > 0 ? Math.min(...producerScores) : null;
+        
+        // Check if this hole's scores have changed from what's currently saved
+        const existingScore = scores?.find(s => s.holeNumber === holeIndex + 1);
+        const hasChanged = !existingScore || 
+          existingScore.aviatorScore !== aviatorBestScore || 
+          existingScore.producerScore !== producerBestScore;
+        
+        // Only save if scores have changed and at least one team has a score
+        if (hasChanged && (aviatorBestScore !== null || producerBestScore !== null)) {
+          const scoreData = {
+            matchId: id,
+            holeNumber: holeIndex + 1, // API expects 1-based hole numbers
+            aviatorScore: aviatorBestScore,
+            producerScore: producerBestScore,
+          };
+          
+          console.log(`Saving score for hole ${holeIndex + 1}:`, scoreData);
+          updateScoreMutation.mutate(scoreData);
+        }
+      }
+    }, 1000); // Wait 1 second after last change before saving
+  }, [id, scores, updateScoreMutation]);
 
   // Toggle lock mutation
   const toggleLockMutation = useMutation({
@@ -667,11 +722,13 @@ const Match = ({ id }: { id: number }) => {
                 console.log('DEBUG: Final transformed data:', transformedData);
                 return transformedData;
               })()}
+              existingScores={(scores || []).map(score => ({
+                holeNumber: score.holeNumber,
+                aviatorScore: score.aviatorScore,
+                producerScore: score.producerScore
+              }))}
               locked={isLocked}
-              onUpdateScores={(playerScores) => {
-                // Convert player scores to the expected ScoreData format for the API
-                console.log('Player scores updated:', playerScores);
-              }}
+              onUpdateScores={debouncedSaveScores}
             />
           )}
           {round?.matchType === "2-man gross" && (

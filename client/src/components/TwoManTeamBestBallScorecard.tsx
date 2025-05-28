@@ -44,6 +44,11 @@ export function transformRawPlayerData(
 interface ScorecardProps {
   holes: HoleData[];
   playerScores: PlayerScore[];
+  existingScores?: Array<{
+    holeNumber: number;
+    aviatorScore: number | null;
+    producerScore: number | null;
+  }>;
   locked?: boolean;
   onUpdateScores?: (playerScores: PlayerScore[]) => void;
 }
@@ -51,6 +56,7 @@ interface ScorecardProps {
 const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
   holes = [],
   playerScores = [],
+  existingScores = [],
   locked = false,
   onUpdateScores,
 }) => {
@@ -60,6 +66,33 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
     setLocalPlayerScores(playerScores);
   }, [playerScores]);
 
+  // Load existing scores from database into player scores
+  useEffect(() => {
+    if (existingScores.length > 0 && localPlayerScores.length > 0) {
+      const updatedPlayerScores = [...localPlayerScores];
+      
+      existingScores.forEach(score => {
+        const holeIndex = score.holeNumber - 1; // Convert to 0-based index
+        
+        // For best ball, we need to distribute the team scores to the players
+        // For now, we'll put the team's best score on the first player of each team
+        const aviatorPlayers = updatedPlayerScores.filter(p => p.team === 'aviator');
+        const producerPlayers = updatedPlayerScores.filter(p => p.team === 'producer');
+        
+        if (score.aviatorScore !== null && aviatorPlayers.length > 0) {
+          aviatorPlayers[0].scores[holeIndex] = score.aviatorScore;
+        }
+        
+        if (score.producerScore !== null && producerPlayers.length > 0) {
+          producerPlayers[0].scores[holeIndex] = score.producerScore;
+        }
+      });
+      
+      setLocalPlayerScores(updatedPlayerScores);
+    }
+  }, [existingScores, playerScores]);
+
+  // Calculate net scores and best ball markers whenever scores change
   useEffect(() => {
     const updatedScores = localPlayerScores.map(player => {
       const netScores = player.scores.map((gross, idx) => {
@@ -91,8 +124,12 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
     });
 
     setLocalPlayerScores(updatedScores);
-    onUpdateScores?.(updatedScores);
-  }, [localPlayerScores.map(p => p.scores.join(',')).join('|'), holes, onUpdateScores]);
+  }, [localPlayerScores.map(p => p.scores.join(',')).join('|'), holes]);
+
+  // Call onUpdateScores separately to avoid infinite loops
+  useEffect(() => {
+    onUpdateScores?.(localPlayerScores);
+  }, [localPlayerScores.map(p => p.scores.join(',')).join('|')]);
 
   const handleScoreChange = (playerIndex: number, holeIndex: number, value: string) => {
     const newScores = [...localPlayerScores];
