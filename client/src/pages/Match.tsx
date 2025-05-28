@@ -85,18 +85,26 @@ const Match = ({ id }: { id: number }) => {
   const { user } = useAuth();
   
   // Load teams for dynamic team handling
-  const { data: teams = [] } = useTeams();
+  const { data: teams = [], isLoading: isTeamsLoading } = useTeams();
   
   // Helper functions to get team IDs dynamically
   const getAviatorTeamId = () => {
     if (!teams?.length) return 1; // fallback
-    const aviatorTeam = teams.find(t => t.shortName.toLowerCase() === 'aviators' || t.name.toLowerCase().includes('aviator'));
+    const aviatorTeam = teams.find(t => 
+      t.shortName.toLowerCase() === 'aviators' || 
+      t.name.toLowerCase().includes('aviator')
+    );
+    console.log('DEBUG: getAviatorTeamId - found team:', aviatorTeam);
     return aviatorTeam?.id || 1;
   };
   
   const getProducerTeamId = () => {
     if (!teams?.length) return 2; // fallback
-    const producerTeam = teams.find(t => t.shortName.toLowerCase() === 'producers' || t.name.toLowerCase().includes('producer'));
+    const producerTeam = teams.find(t => 
+      t.shortName.toLowerCase() === 'producers' || 
+      t.name.toLowerCase().includes('producer')
+    );
+    console.log('DEBUG: getProducerTeamId - found team:', producerTeam);
     return producerTeam?.id || 2;
   };
   
@@ -428,7 +436,7 @@ const Match = ({ id }: { id: number }) => {
   });
 
   const isLoading =
-    isMatchLoading || isScoresLoading || isHolesLoading || isRoundLoading || isPlayersLoading || isParticipantsLoading;
+    isMatchLoading || isScoresLoading || isHolesLoading || isRoundLoading || isPlayersLoading || isParticipantsLoading || isTeamsLoading;
 
   // Calculate proper match play result (e.g., "3&2", "4&3", "1 UP")
   const calculateMatchPlayResult = (completedScores: ScoreData[]): string => {
@@ -788,14 +796,39 @@ const Match = ({ id }: { id: number }) => {
               playerScores={(() => {
                 console.log('DEBUG: Raw participants from API:', participants);
                 console.log('DEBUG: Raw players from API:', players);
+                console.log('DEBUG: Teams data:', teams);
+                
+                // Don't process if teams data isn't loaded yet
+                if (!teams || teams.length === 0) {
+                  console.log('DEBUG: Teams data not loaded yet, returning empty array');
+                  return [];
+                }
                 
                 const mappedPlayers = (participants || []).map(p => {
                   const player = players.find(player => player.id === p.playerId);
                   console.log(`DEBUG: Mapping participant ${p.playerId} to player:`, player);
+                  
+                  // Map string team identifiers to team IDs using actual teams data
+                  let teamId: number;
+                  if (p.team === 'aviators') {
+                    teamId = getAviatorTeamId();
+                  } else if (p.team === 'producers') {
+                    teamId = getProducerTeamId();
+                  } else {
+                    // Fallback: try to find team by string match
+                    const foundTeam = teams.find(t => 
+                      t.shortName.toLowerCase() === p.team?.toLowerCase() ||
+                      t.name.toLowerCase().includes(p.team?.toLowerCase() || '')
+                    );
+                    teamId = foundTeam?.id || 1; // Last resort fallback
+                  }
+                  
+                  console.log(`DEBUG: Team mapping - participant team: "${p.team}" -> teamId: ${teamId}`);
+                  
                   return {
                     id: p.playerId,
                     name: player?.name || `Player ${p.playerId}`,
-                    teamId: p.team === 'aviators' ? getAviatorTeamId() : getProducerTeamId(),
+                    teamId: teamId,
                     team: (p.team === 'aviators' ? 'aviator' : 'producer') as 'aviator' | 'producer',
                     handicapStrokes: Array(18).fill(0) // Default handicap strokes
                   };
@@ -817,13 +850,21 @@ const Match = ({ id }: { id: number }) => {
                 console.log('DEBUG: Final transformed data:', transformedData);
                 return transformedData;
               })()}
-              existingScores={(scores || []).map(score => ({
-                holeNumber: score.holeNumber,
-                teamScores: {
-                  [getAviatorTeamId()]: score.aviatorScore,
-                  [getProducerTeamId()]: score.producerScore
+              existingScores={(() => {
+                // Don't process scores if teams data isn't loaded yet
+                if (!teams || teams.length === 0) {
+                  console.log('DEBUG: Teams data not loaded yet, returning empty scores array');
+                  return [];
                 }
-              }))}
+                
+                return (scores || []).map(score => ({
+                  holeNumber: score.holeNumber,
+                  teamScores: {
+                    [getAviatorTeamId()]: score.aviatorScore,
+                    [getProducerTeamId()]: score.producerScore
+                  }
+                }));
+              })()}
               locked={isLocked}
               onUpdateScores={debouncedSaveBestBallScores}
             />

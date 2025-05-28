@@ -119,14 +119,15 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
     holes.forEach((_, holeIdx) => {
       const bestByTeam: Record<number, { net: number | null; index: number | null }> = {};
       
-      // Initialize best scores for each team
-      teams.forEach(team => {
-        bestByTeam[team.id] = { net: null, index: null };
+      // Initialize best scores for each team based on actual players
+      const uniqueTeamIds = Array.from(new Set(updatedScores.map(p => p.teamId)));
+      uniqueTeamIds.forEach(teamId => {
+        bestByTeam[teamId] = { net: null, index: null };
       });
 
       updatedScores.forEach((player, i) => {
         const net = player.netScores[holeIdx];
-        if (net !== null && bestByTeam[player.teamId]) {
+        if (net !== null && bestByTeam[player.teamId] !== undefined) {
           const best = bestByTeam[player.teamId];
           if (best.net === null || net < best.net) {
             bestByTeam[player.teamId] = { net, index: i };
