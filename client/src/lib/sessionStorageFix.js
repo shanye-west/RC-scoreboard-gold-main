@@ -7,10 +7,11 @@
  * Loads individual player scores without using sessionStorage
  * @param {Array} individualScores - Array of scores from the database
  * @param {Array} aviatorPlayersList - List of Aviator players
- * @param {Array} producerPlayersList - List of Producer players
+ * @param {Array} producerPlayersList - List of Producer players  
  * @param {Function} setPlayerScores - State setter function for player scores
  * @param {Function} getPlayerCourseHandicap - Function to get player handicap
  * @param {Array} holes - Hole information including handicap ranks
+ * @param {Array} teams - Array of team objects with id and name
  */
 export function loadIndividualScores(
   individualScores, 
@@ -18,7 +19,8 @@ export function loadIndividualScores(
   producerPlayersList, 
   setPlayerScores,
   getPlayerCourseHandicap,
-  holes
+  holes,
+  teams = []
 ) {
   if (!individualScores || individualScores.length === 0 || 
       aviatorPlayersList.length === 0 || producerPlayersList.length === 0) {
@@ -41,8 +43,22 @@ export function loadIndividualScores(
       
       if (!player) return;
       
+      // Helper function to get team identifier from team ID
+      const getTeamIdentifier = (teamId) => {
+        const team = teams.find(t => t.id === teamId);
+        if (team) {
+          // Use team name or fallback to aviator/producer for backwards compatibility
+          if (team.name.toLowerCase().includes('aviator')) return 'aviator';
+          if (team.name.toLowerCase().includes('producer')) return 'producer';
+          return team.name.toLowerCase().replace(/\s+/g, '_');
+        }
+        // Fallback for backwards compatibility
+        return teamId === 1 ? 'aviator' : 'producer';
+      };
+      
       // Create keys for this score
-      const teamKey = `${score.holeNumber}-${player.teamId === 1 ? 'aviator' : 'producer'}`;
+      const teamIdentifier = getTeamIdentifier(player.teamId);
+      const teamKey = `${score.holeNumber}-${teamIdentifier}`;
       const playerKey = `${score.holeNumber}-${player.name}`;
       
       // Get handicap strokes (either from the score or from existing data)
@@ -61,7 +77,7 @@ export function loadIndividualScores(
       const playerScoreObj = {
         player: player.name,
         score: score.score,
-        teamId: player.teamId === 1 ? "aviator" : "producer",
+        teamId: teamIdentifier,
         playerId: player.id,
         handicapStrokes,
         netScore,
@@ -98,6 +114,7 @@ export function loadIndividualScores(
  * @param {Function} setPlayerScores - State setter function
  * @param {Function} getPlayerCourseHandicap - Function to get handicap
  * @param {Array} holes - Hole information
+ * @param {Array} teams - Array of team objects with id and name
  */
 export function loadFallbackScores(
   existingPlayerScores, 
@@ -106,7 +123,8 @@ export function loadFallbackScores(
   producerPlayersList, 
   setPlayerScores,
   getPlayerCourseHandicap,
-  holes
+  holes,
+  teams = []
 ) {
   if (!existingPlayerScores || existingPlayerScores.length === 0 || 
       (individualScores && individualScores.length > 0) ||
@@ -125,8 +143,22 @@ export function loadFallbackScores(
       
       if (!player) return;
       
+      // Helper function to get team identifier from team ID
+      const getTeamIdentifier = (teamId) => {
+        const team = teams.find(t => t.id === teamId);
+        if (team) {
+          // Use team name or fallback to aviator/producer for backwards compatibility
+          if (team.name.toLowerCase().includes('aviator')) return 'aviator';
+          if (team.name.toLowerCase().includes('producer')) return 'producer';
+          return team.name.toLowerCase().replace(/\s+/g, '_');
+        }
+        // Fallback for backwards compatibility
+        return teamId === 1 ? 'aviator' : 'producer';
+      };
+      
       // Create key for this score
-      const teamKey = `${score.holeNumber}-${player.teamId === 1 ? 'aviator' : 'producer'}`;
+      const teamIdentifier = getTeamIdentifier(player.teamId);
+      const teamKey = `${score.holeNumber}-${teamIdentifier}`;
       const playerKey = `${score.holeNumber}-${player.name}`;
       
       // Get handicap information
@@ -152,7 +184,7 @@ export function loadFallbackScores(
       const playerScoreObj = {
         player: player.name,
         score: score.score,
-        teamId: player.teamId === 1 ? "aviator" : "producer",
+        teamId: teamIdentifier,
         playerId: player.id,
         handicapStrokes,
         netScore,

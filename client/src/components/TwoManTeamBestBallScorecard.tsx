@@ -1,12 +1,13 @@
 import React, { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { useTeams, type Team } from "@/hooks/useTeams";
 import "./TwoManTeamBestBallScorecard.css";
 
 interface PlayerScore {
   playerId: number;
   playerName: string;
-  team: 'aviator' | 'producer';
+  teamId: number;
   scores: (number | null)[];
   netScores: (number | null)[];
   isBestBall: boolean[];
@@ -22,7 +23,7 @@ interface HoleData {
 interface RawPlayerData {
   id: number;
   name: string;
-  team: 'aviator' | 'producer';
+  teamId: number;
   handicapStrokes: number[];
 }
 
@@ -33,7 +34,7 @@ export function transformRawPlayerData(
   return rawPlayers.map((p) => ({
     playerId: p.id,
     playerName: p.name,
-    team: p.team,
+    teamId: p.teamId,
     scores: Array(holes.length).fill(null),
     netScores: Array(holes.length).fill(null),
     isBestBall: Array(holes.length).fill(false),
@@ -46,8 +47,7 @@ interface ScorecardProps {
   playerScores: PlayerScore[];
   existingScores?: Array<{
     holeNumber: number;
-    aviatorScore: number | null;
-    producerScore: number | null;
+    teamScores: Record<number, number | null>; // teamId -> score
   }>;
   locked?: boolean;
   onUpdateScores?: (playerScores: PlayerScore[]) => void;
@@ -61,10 +61,28 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
   onUpdateScores,
 }) => {
   const [localPlayerScores, setLocalPlayerScores] = useState<PlayerScore[]>(playerScores);
+  const { data: teams = [] } = useTeams();
 
   useEffect(() => {
     setLocalPlayerScores(playerScores);
   }, [playerScores]);
+
+  // Helper function to get team by ID
+  const getTeamById = (teamId: number): Team | undefined => {
+    return teams.find(team => team.id === teamId);
+  };
+
+  // Helper function to get team identifier (shortName)
+  const getTeamIdentifier = (teamId: number): string => {
+    const team = getTeamById(teamId);
+    return team ? team.shortName.toLowerCase() : `team-${teamId}`;
+  };
+
+  // Helper function to get team display name
+  const getTeamDisplayName = (teamId: number): string => {
+    const team = getTeamById(teamId);
+    return team ? team.name.toUpperCase() : `TEAM ${teamId}`;
+  };
 
   // Load existing scores from database into player scores
   useEffect(() => {
@@ -76,16 +94,12 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
         
         // For best ball, we need to distribute the team scores to the players
         // For now, we'll put the team's best score on the first player of each team
-        const aviatorPlayers = updatedPlayerScores.filter(p => p.team === 'aviator');
-        const producerPlayers = updatedPlayerScores.filter(p => p.team === 'producer');
-        
-        if (score.aviatorScore !== null && aviatorPlayers.length > 0) {
-          aviatorPlayers[0].scores[holeIndex] = score.aviatorScore;
-        }
-        
-        if (score.producerScore !== null && producerPlayers.length > 0) {
-          producerPlayers[0].scores[holeIndex] = score.producerScore;
-        }
+        Object.entries(score.teamScores).forEach(([teamId, teamScore]) => {
+          const teamPlayers = updatedPlayerScores.filter(p => p.teamId === parseInt(teamId));
+          if (teamScore !== null && teamPlayers.length > 0) {
+            teamPlayers[0].scores[holeIndex] = teamScore;
+          }
+        });
       });
       
       setLocalPlayerScores(updatedPlayerScores);
@@ -103,28 +117,31 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
 
     // Determine best net per team per hole
     holes.forEach((_, holeIdx) => {
-      const bestByTeam: { [team: string]: { net: number | null; index: number | null } } = {
-        aviator: { net: null, index: null },
-        producer: { net: null, index: null }
-      };
+      const bestByTeam: Record<number, { net: number | null; index: number | null }> = {};
+      
+      // Initialize best scores for each team
+      teams.forEach(team => {
+        bestByTeam[team.id] = { net: null, index: null };
+      });
 
       updatedScores.forEach((player, i) => {
         const net = player.netScores[holeIdx];
-        if (net !== null) {
-          const best = bestByTeam[player.team];
+        if (net !== null && bestByTeam[player.teamId]) {
+          const best = bestByTeam[player.teamId];
           if (best.net === null || net < best.net) {
-            bestByTeam[player.team] = { net, index: i };
+            bestByTeam[player.teamId] = { net, index: i };
           }
         }
       });
 
       updatedScores.forEach((player, i) => {
-        player.isBestBall[holeIdx] = bestByTeam[player.team].index === i;
+        const teamBest = bestByTeam[player.teamId];
+        player.isBestBall[holeIdx] = teamBest && teamBest.index === i;
       });
     });
 
     setLocalPlayerScores(updatedScores);
-  }, [localPlayerScores.map(p => p.scores.join(',')).join('|'), holes]);
+  }, [localPlayerScores.map(p => p.scores.join(',')).join('|'), holes, teams]);
 
   // Call onUpdateScores separately to avoid infinite loops
   useEffect(() => {
@@ -145,11 +162,10 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
   const backNine = holes.slice(9, 18);
   
   // Calculate team totals for front nine, back nine, and total
-  const calculateTeamTotals = (team: 'aviator' | 'producer') => {
-    const teamPlayers = localPlayerScores.filter(p => p.team === team);
+  const calculateTeamTotals = (teamId: number) => {
+    const teamPlayers = localPlayerScores.filter(p => p.teamId === teamId);
     let frontTotal = 0;
     let backTotal = 0;
-    let totalHoles = 0;
 
     // Front nine
     for (let i = 0; i < 9; i++) {
@@ -163,7 +179,6 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
       
       if (bestScore !== null) {
         frontTotal += bestScore;
-        totalHoles++;
       }
     }
 
@@ -185,17 +200,24 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
     return { frontTotal, backTotal, total: frontTotal + backTotal };
   };
 
-  const aviatorTotals = calculateTeamTotals('aviator');
-  const producerTotals = calculateTeamTotals('producer');
+  // Get all unique team IDs from player scores
+  const teamIds = Array.from(new Set(localPlayerScores.map(p => p.teamId)));
+  const teamTotals = teamIds.reduce((acc, teamId) => {
+    acc[teamId] = calculateTeamTotals(teamId);
+    return acc;
+  }, {} as Record<number, { frontTotal: number; backTotal: number; total: number }>);
 
   const renderScoreGrid = () => {
-    const aviatorPlayers = localPlayerScores.filter(p => p.team === 'aviator');
-    const producerPlayers = localPlayerScores.filter(p => p.team === 'producer');
+    // Group players by team
+    const playersByTeam = teamIds.reduce((acc, teamId) => {
+      acc[teamId] = localPlayerScores.filter(p => p.teamId === teamId);
+      return acc;
+    }, {} as Record<number, PlayerScore[]>);
 
     // Helper function to render a player row
     const renderPlayerRow = (player: PlayerScore) => (
       <React.Fragment key={`player-${player.playerId}`}>
-        <div className={`player-name ${player.team}`}>{player.playerName}</div>
+        <div className={`player-name ${getTeamIdentifier(player.teamId)}`}>{player.playerName}</div>
         <div className="player-handicap">{player.handicapStrokes.reduce((a, b) => a + b, 0)}</div>
         {frontNine.map((_, holeIdx) => (
           <div key={`${player.playerId}-front-${holeIdx}`} 
@@ -270,17 +292,17 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
     );
 
     // Helper function to render team total row
-    const renderTeamTotalRow = (team: 'aviator' | 'producer', totals: typeof aviatorTotals) => {
-      const teamPlayers = team === 'aviator' ? aviatorPlayers : producerPlayers;
-      const teamClass = team === 'aviator' ? 'aviators' : 'producers';
-      const teamName = team === 'aviator' ? 'THE AVIATORS' : 'THE PRODUCERS';
+    const renderTeamTotalRow = (teamId: number, totals: typeof teamTotals[number]) => {
+      const teamPlayers = playersByTeam[teamId] || [];
+      const teamClass = getTeamIdentifier(teamId) + 's';
+      const teamName = getTeamDisplayName(teamId);
       
       return (
-        <React.Fragment key={`team-total-${team}`}>
+        <React.Fragment key={`team-total-${teamId}`}>
           <div className={`team-total ${teamClass}`}>{teamName}</div>
           <div className="empty"></div>
           {frontNine.map((_, holeIdx) => {
-            const bestScore = teamPlayers.reduce((best, player) => {
+            const bestScore = teamPlayers.reduce((best: number | null, player: PlayerScore) => {
               const net = player.netScores[holeIdx];
               if (net !== null && (best === null || net < best)) {
                 return net;
@@ -288,7 +310,7 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
               return best;
             }, null as number | null);
             return (
-              <div key={`${team}-team-front-${holeIdx}`} className="team-total">
+              <div key={`${teamId}-team-front-${holeIdx}`} className="team-total">
                 {bestScore !== null ? bestScore : ''}
               </div>
             );
@@ -296,7 +318,7 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
           <div className="team-total">{totals.frontTotal || ''}</div>
           {backNine.map((_, holeIdx) => {
             const actualHoleIdx = holeIdx + 9;
-            const bestScore = teamPlayers.reduce((best, player) => {
+            const bestScore = teamPlayers.reduce((best: number | null, player: PlayerScore) => {
               const net = player.netScores[actualHoleIdx];
               if (net !== null && (best === null || net < best)) {
                 return net;
@@ -304,7 +326,7 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
               return best;
             }, null as number | null);
             return (
-              <div key={`${team}-team-back-${holeIdx}`} className="team-total">
+              <div key={`${teamId}-team-back-${holeIdx}`} className="team-total">
                 {bestScore !== null ? bestScore : ''}
               </div>
             );
@@ -317,18 +339,26 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
 
     // Helper function to render match status row
     const renderMatchStatusRow = () => {
-      const aviatorTotal = aviatorTotals.total || 0;
-      const producerTotal = producerTotals.total || 0;
+      if (teamIds.length !== 2) {
+        return null; // Only show match status for exactly 2 teams
+      }
+
+      const [team1Id, team2Id] = teamIds;
+      const team1Total = teamTotals[team1Id]?.total || 0;
+      const team2Total = teamTotals[team2Id]?.total || 0;
+      const team1Name = getTeamById(team1Id)?.shortName.toUpperCase() || `TEAM ${team1Id}`;
+      const team2Name = getTeamById(team2Id)?.shortName.toUpperCase() || `TEAM ${team2Id}`;
+      
       let status = '';
       
-      if (aviatorTotal === 0 && producerTotal === 0) {
+      if (team1Total === 0 && team2Total === 0) {
         status = 'MATCH EVEN';
-      } else if (aviatorTotal < producerTotal) {
-        const diff = producerTotal - aviatorTotal;
-        status = `AVIATORS UP ${diff}`;
-      } else if (producerTotal < aviatorTotal) {
-        const diff = aviatorTotal - producerTotal;
-        status = `PRODUCERS UP ${diff}`;
+      } else if (team1Total < team2Total) {
+        const diff = team2Total - team1Total;
+        status = `${team1Name} UP ${diff}`;
+      } else if (team2Total < team1Total) {
+        const diff = team1Total - team2Total;
+        status = `${team2Name} UP ${diff}`;
       } else {
         status = 'MATCH EVEN';
       }
@@ -350,6 +380,86 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
       );
     };
 
+    // If we have exactly 2 teams, render in the traditional order
+    if (teamIds.length === 2) {
+      const [team1Id, team2Id] = teamIds.sort(); // Sort for consistent ordering
+      const team1Players = playersByTeam[team1Id] || [];
+      const team2Players = playersByTeam[team2Id] || [];
+
+      return (
+        <div className="scorecard-container">
+          <div className="scorecard-grid">
+            {/* Header Row */}
+            <div className="header-cell player-header">Player</div>
+            <div className="header-cell handicap-header">HCP</div>
+            {frontNine.map(hole => (
+              <div key={`front-${hole.hole_number}`} className="header-cell hole-number">
+                {hole.hole_number}
+              </div>
+            ))}
+            <div className="header-cell total-header">OUT</div>
+            {backNine.map(hole => (
+              <div key={`back-${hole.hole_number}`} className="header-cell hole-number">
+                {hole.hole_number}
+              </div>
+            ))}
+            <div className="header-cell total-header">IN</div>
+            <div className="header-cell total-header">TOT</div>
+
+            {/* Par Row */}
+            <div className="par-label">PAR</div>
+            <div className="empty"></div>
+            {frontNine.map(hole => (
+              <div key={`par-front-${hole.hole_number}`} className="par-value">
+                {hole.par || 4}
+              </div>
+            ))}
+            <div className="par-value">{frontNine.reduce((sum, h) => sum + (h.par || 4), 0)}</div>
+            {backNine.map(hole => (
+              <div key={`par-back-${hole.hole_number}`} className="par-value">
+                {hole.par || 4}
+              </div>
+            ))}
+            <div className="par-value">{backNine.reduce((sum, h) => sum + (h.par || 4), 0)}</div>
+            <div className="par-value">{holes.reduce((sum, h) => sum + (h.par || 4), 0)}</div>
+
+            {/* Handicap Row */}
+            <div className="handicap-label">HCP</div>
+            <div className="empty"></div>
+            {frontNine.map(hole => (
+              <div key={`hcp-front-${hole.hole_number}`} className="handicap-value">
+                {hole.handicap || 1}
+              </div>
+            ))}
+            <div className="empty"></div>
+            {backNine.map(hole => (
+              <div key={`hcp-back-${hole.hole_number}`} className="handicap-value">
+                {hole.handicap || 1}
+              </div>
+            ))}
+            <div className="empty"></div>
+            <div className="empty"></div>
+
+            {/* Team 1 Players */}
+            {team1Players.map((player) => renderPlayerRow(player))}
+            
+            {/* Team 1 Total */}
+            {renderTeamTotalRow(team1Id, teamTotals[team1Id])}
+            
+            {/* Match Status */}
+            {renderMatchStatusRow()}
+            
+            {/* Team 2 Total */}
+            {renderTeamTotalRow(team2Id, teamTotals[team2Id])}
+            
+            {/* Team 2 Players */}
+            {team2Players.map((player) => renderPlayerRow(player))}
+          </div>
+        </div>
+      );
+    }
+
+    // Fallback for non-standard number of teams
     return (
       <div className="scorecard-container">
         <div className="scorecard-grid">
@@ -404,29 +514,11 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
           <div className="empty"></div>
           <div className="empty"></div>
 
-          {/* Render rows in the specific order requested:
-              1. Aviators Player 1
-              2. Aviators Player 2  
-              3. Aviators team score
-              4. Match status
-              5. Producers team score
-              6. Producers Player 1
-              7. Producers Player 2 */}
-          
-          {/* 1-2. Aviators Players */}
-          {aviatorPlayers.map((player) => renderPlayerRow(player))}
-          
-          {/* 3. Aviators Team Score */}
-          {renderTeamTotalRow('aviator', aviatorTotals)}
-          
-          {/* 4. Match Status */}
-          {renderMatchStatusRow()}
-          
-          {/* 5. Producers Team Score */}
-          {renderTeamTotalRow('producer', producerTotals)}
-          
-          {/* 6-7. Producers Players */}
-          {producerPlayers.map((player) => renderPlayerRow(player))}
+          {/* All Players and Team Totals */}
+          {teamIds.map(teamId => [
+            ...(playersByTeam[teamId] || []).map((player: PlayerScore) => renderPlayerRow(player)),
+            renderTeamTotalRow(teamId, teamTotals[teamId])
+          ])}
         </div>
       </div>
     );

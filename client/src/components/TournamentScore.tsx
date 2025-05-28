@@ -1,3 +1,4 @@
+import { useTeams } from "@/hooks/useTeams";
 import aviatorsLogo from "../assets/aviators-logo.svg";
 import producersLogo from "../assets/producers-logo.svg";
 import aviatorsText from "../assets/aviators-text.svg";
@@ -16,13 +17,32 @@ const TournamentScore = ({
   pendingAviatorScore = 0, 
   pendingProducerScore = 0 
 }: TournamentScoreProps) => {
+  const { data: teams = [] } = useTeams();
+
+  // Helper functions to get team data dynamically
+  const getAviatorTeam = () => {
+    return teams.find(team => 
+      team.name.toLowerCase().includes('aviator') || 
+      team.name.toLowerCase().includes('aviators')
+    ) || { id: 1, name: 'Aviators', shortName: 'AVI', colorCode: '#aviator' };
+  };
+
+  const getProducerTeam = () => {
+    return teams.find(team => 
+      team.name.toLowerCase().includes('producer') || 
+      team.name.toLowerCase().includes('producers')
+    ) || { id: 2, name: 'Producers', shortName: 'PROD', colorCode: '#producer' };
+  };
+
+  const aviatorTeam = getAviatorTeam();
+  const producerTeam = getProducerTeam();
   return (
     <div className="bg-white rounded-lg shadow-md p-4 mb-6">
       <div className="flex justify-between items-center">
         <div className="text-center w-5/12">
           <div className="bg-aviator text-white py-2 px-6 rounded-t-lg flex items-center justify-center">
-            <img src={aviatorsLogo} alt="Aviators" className="w-7 h-7 mr-2" />
-            <img src={aviatorsText} alt="Aviators" className="w-15 h-15" />
+            <img src={aviatorsLogo} alt={aviatorTeam.name} className="w-7 h-7 mr-2" />
+            <img src={aviatorsText} alt={aviatorTeam.name} className="w-15 h-15" />
           </div>
           <div className="text-5xl font-mono font-bold py-4 border-b-2 border-l-2 border-r-2 border-gray-200 rounded-b-lg relative">
             {aviatorScore}
@@ -38,8 +58,8 @@ const TournamentScore = ({
         
         <div className="text-center w-5/12">
           <div className="bg-producer text-white py-2 px-6 rounded-t-lg flex items-center justify-center">
-            <img src={producersLogo} alt="Producers" className="w-7 h-7 mr-1" />
-            <img src={producersText} alt="Producers" className="w-15 h-15" />
+            <img src={producersLogo} alt={producerTeam.name} className="w-7 h-7 mr-1" />
+            <img src={producersText} alt={producerTeam.name} className="w-15 h-15" />
           </div>
           <div className="text-5xl font-mono font-bold py-4 border-b-2 border-l-2 border-r-2 border-gray-200 rounded-b-lg relative">
             {producerScore}

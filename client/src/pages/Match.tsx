@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/use-auth";
+import { useTeams } from "@/hooks/useTeams";
 
 interface MatchProps {
   id: number;
@@ -81,6 +82,33 @@ interface ScoreData {
 const Match = ({ id }: { id: number }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  
+  // Load teams for dynamic team handling
+  const { data: teams = [] } = useTeams();
+  
+  // Helper functions to get team IDs dynamically
+  const getAviatorTeamId = () => {
+    if (!teams?.length) return 1; // fallback
+    const aviatorTeam = teams.find(t => t.shortName.toLowerCase() === 'aviators' || t.name.toLowerCase().includes('aviator'));
+    return aviatorTeam?.id || 1;
+  };
+  
+  const getProducerTeamId = () => {
+    if (!teams?.length) return 2; // fallback
+    const producerTeam = teams.find(t => t.shortName.toLowerCase() === 'producers' || t.name.toLowerCase().includes('producer'));
+    return producerTeam?.id || 2;
+  };
+  
+  // Helper function to get team identifier from ID
+  const getTeamIdentifier = (teamId: number) => {
+    const aviatorTeamId = getAviatorTeamId();
+    const producerTeamId = getProducerTeamId();
+    
+    if (teamId === aviatorTeamId) return 'aviators';
+    if (teamId === producerTeamId) return 'producers';
+    return 'unknown';
+  };
 
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -269,9 +297,12 @@ const Match = ({ id }: { id: number }) => {
     saveTimeoutRef.current = setTimeout(() => {
       console.log('Debounced save triggered for:', playerScores);
       
-      // Group players by team
-      const aviatorPlayers = playerScores.filter(p => p.team === 'aviator');
-      const producerPlayers = playerScores.filter(p => p.team === 'producer');
+      // Group players by team using dynamic team logic
+      const aviatorTeamId = getAviatorTeamId();
+      const producerTeamId = getProducerTeamId();
+      
+      const aviatorPlayers = playerScores.filter(p => p.team === getTeamIdentifier(aviatorTeamId));
+      const producerPlayers = playerScores.filter(p => p.team === getTeamIdentifier(producerTeamId));
       
       // For each hole, calculate the best ball score for each team
       const holeCount = playerScores[0]?.scores?.length || 0;
@@ -497,13 +528,16 @@ const Match = ({ id }: { id: number }) => {
     }
 
     if (participants && participants.length > 0 && players && players.length > 0) {
+      const aviatorTeamIdentifier = getTeamIdentifier(getAviatorTeamId());
+      const producerTeamIdentifier = getTeamIdentifier(getProducerTeamId());
+      
       const aviators = participants
-        .filter((p: any) => p.team === "aviators")
+        .filter((p: any) => p.team === aviatorTeamIdentifier)
         .map((p: any) => players.find((player: any) => player.id === p.playerId))
         .filter(Boolean);
 
       const producers = participants
-        .filter((p: any) => p.team === "producers")
+        .filter((p: any) => p.team === producerTeamIdentifier)
         .map((p: any) => players.find((player: any) => player.id === p.playerId))
         .filter(Boolean);
 
@@ -562,15 +596,18 @@ const Match = ({ id }: { id: number }) => {
         .filter((p: any) => !existingProducerPlayerIds.includes(p.id));
 
       // Players to remove
+      const aviatorTeamIdentifier = getTeamIdentifier(getAviatorTeamId());
+      const producerTeamIdentifier = getTeamIdentifier(getProducerTeamId());
+      
       const aviatorPlayersToRemove = participants
         .filter((p: any) => 
-          p.team === "aviators" && 
+          p.team === aviatorTeamIdentifier && 
           !selectedAviatorPlayers.some((s: any) => s.id === p.playerId)
         );
 
       const producerPlayersToRemove = participants
         .filter((p: any) => 
-          p.team === "producers" && 
+          p.team === producerTeamIdentifier && 
           !selectedProducerPlayers.some((s: any) => s.id === p.playerId)
         );
 
@@ -584,7 +621,7 @@ const Match = ({ id }: { id: number }) => {
         await addParticipantMutation.mutateAsync({
           matchId: match.id,
           playerId: player.id,
-          team: "aviators"
+          team: aviatorTeamIdentifier
         });
       }
 
@@ -593,7 +630,7 @@ const Match = ({ id }: { id: number }) => {
         await addParticipantMutation.mutateAsync({
           matchId: match.id,
           playerId: player.id,
-          team: "producers"
+          team: producerTeamIdentifier
         });
       }
 
@@ -701,6 +738,7 @@ const Match = ({ id }: { id: number }) => {
                   return {
                     id: p.playerId,
                     name: player?.name || `Player ${p.playerId}`,
+                    teamId: p.team === 'aviators' ? getAviatorTeamId() : getProducerTeamId(),
                     team: (p.team === 'aviators' ? 'aviator' : 'producer') as 'aviator' | 'producer',
                     handicapStrokes: Array(18).fill(0) // Default handicap strokes
                   };
@@ -724,8 +762,10 @@ const Match = ({ id }: { id: number }) => {
               })()}
               existingScores={(scores || []).map(score => ({
                 holeNumber: score.holeNumber,
-                aviatorScore: score.aviatorScore,
-                producerScore: score.producerScore
+                teamScores: {
+                  [getAviatorTeamId()]: score.aviatorScore,
+                  [getProducerTeamId()]: score.producerScore
+                }
               }))}
               locked={isLocked}
               onUpdateScores={debouncedSaveScores}
@@ -777,14 +817,14 @@ const Match = ({ id }: { id: number }) => {
                 <p className="text-lg font-semibold">Final Score:</p>
                 <div className="flex justify-between items-center">
                   <div className="bg-aviator text-white px-4 py-2 rounded">
-                    <p className="font-bold">The Aviators</p>
+                    <p className="font-bold">{teams.find(t => t.id === getAviatorTeamId())?.name || "The Aviators"}</p>
                     <p className="text-2xl text-center">
                       {matchSummary.aviatorTotal}
                     </p>
                   </div>
                   <div className="text-xl font-bold">vs</div>
                   <div className="bg-producer text-white px-4 py-2 rounded">
-                    <p className="font-bold">The Producers</p>
+                    <p className="font-bold">{teams.find(t => t.id === getProducerTeamId())?.name || "The Producers"}</p>
                     <p className="text-2xl text-center">
                       {matchSummary.producerTotal}
                     </p>
@@ -795,9 +835,9 @@ const Match = ({ id }: { id: number }) => {
                   <p className="text-lg font-semibold">Match Play Result:</p>
                   <p className="text-xl mt-2">
                     {matchSummary.leadingTeam === "aviators"
-                      ? "The Aviators"
+                      ? teams.find(t => t.id === getAviatorTeamId())?.name || "The Aviators"
                       : matchSummary.leadingTeam === "producers"
-                        ? "The Producers"
+                        ? teams.find(t => t.id === getProducerTeamId())?.name || "The Producers"
                         : "Match"}{" "}
                     {matchSummary.matchPlayResult !== "AS" ? "won" : "tied"}{" "}
                     <span className="font-bold">
@@ -842,7 +882,7 @@ const Match = ({ id }: { id: number }) => {
               <Label>Aviator Players</Label>
               <div className="grid grid-cols-1 gap-2">
                 {players
-                  ?.filter((p: any) => p.teamId === 1) // Assuming teamId 1 is for Aviators
+                  ?.filter((p: any) => p.teamId === getAviatorTeamId())
                   .map((player: any) => (
                     <div key={player.id} className="flex items-center space-x-2">
                       <Checkbox
@@ -870,7 +910,7 @@ const Match = ({ id }: { id: number }) => {
               <Label>Producer Players</Label>
               <div className="grid grid-cols-1 gap-2">
                 {players
-                  ?.filter((p: any) => p.teamId === 2) // Assuming teamId 2 is for Producers
+                  ?.filter((p: any) => p.teamId === getProducerTeamId())
                   .map((player: any) => (
                     <div key={player.id} className="flex items-center space-x-2">
                       <Checkbox

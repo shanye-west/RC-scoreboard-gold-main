@@ -16,7 +16,8 @@ export function useIndividualScores(
   aviatorPlayersList,
   producerPlayersList,
   setPlayerScores,
-  matchId
+  matchId,
+  teams = []
 ) {
   useEffect(() => {
     // Only proceed if we have players and individual scores
@@ -36,9 +37,10 @@ export function useIndividualScores(
       individualScores,
       aviatorPlayersList,
       producerPlayersList,
-      setPlayerScores
+      setPlayerScores,
+      teams
     );
-  }, [isBestBall, individualScores, aviatorPlayersList, producerPlayersList, setPlayerScores, matchId]);
+  }, [isBestBall, individualScores, aviatorPlayersList, producerPlayersList, setPlayerScores, matchId, teams]);
 }
 
 /**
@@ -53,7 +55,8 @@ export function useFallbackScores(
   setPlayerScores,
   getPlayerCourseHandicap,
   holes,
-  matchId
+  matchId,
+  teams = []
 ) {
   useEffect(() => {
     // Only run if this is a best ball match with player scores but no individual scores
@@ -73,7 +76,8 @@ export function useFallbackScores(
       producerPlayersList,
       setPlayerScores,
       getPlayerCourseHandicap,
-      holes
+      holes,
+      teams
     );
   }, [
     isBestBall, 
@@ -84,7 +88,8 @@ export function useFallbackScores(
     setPlayerScores, 
     getPlayerCourseHandicap, 
     holes, 
-    matchId
+    matchId,
+    teams
   ]);
 }
 
@@ -93,8 +98,22 @@ function processIndividualScores(
   individualScores,
   aviatorPlayersList,
   producerPlayersList,
-  setPlayerScores
+  setPlayerScores,
+  teams = []
 ) {
+  // Helper function to get team identifier from team ID
+  const getTeamIdentifier = (teamId) => {
+    const team = teams.find(t => t.id === teamId);
+    if (team) {
+      // Use team name or fallback to aviator/producer for backwards compatibility
+      if (team.name.toLowerCase().includes('aviator')) return 'aviator';
+      if (team.name.toLowerCase().includes('producer')) return 'producer';
+      return team.name.toLowerCase().replace(/\s+/g, '_');
+    }
+    // Fallback for backwards compatibility
+    return teamId === 1 ? 'aviator' : 'producer';
+  };
+
   setPlayerScores(prevScores => {
     const newPlayerScores = new Map(prevScores);
     
@@ -104,7 +123,7 @@ function processIndividualScores(
       
       if (!player) return;
       
-      const teamId = player.teamId === 1 ? "aviator" : "producer";
+      const teamId = getTeamIdentifier(player.teamId);
       const playerKey = `${score.holeNumber}-${player.name}`;
       const teamKey = `${score.holeNumber}-${teamId}`;
       
@@ -145,8 +164,22 @@ function processFallbackScores(
   producerPlayersList,
   setPlayerScores,
   getPlayerCourseHandicap,
-  holes
+  holes,
+  teams = []
 ) {
+  // Helper function to get team identifier from team ID
+  const getTeamIdentifier = (teamId) => {
+    const team = teams.find(t => t.id === teamId);
+    if (team) {
+      // Use team name or fallback to aviator/producer for backwards compatibility
+      if (team.name.toLowerCase().includes('aviator')) return 'aviator';
+      if (team.name.toLowerCase().includes('producer')) return 'producer';
+      return team.name.toLowerCase().replace(/\s+/g, '_');
+    }
+    // Fallback for backwards compatibility
+    return teamId === 1 ? 'aviator' : 'producer';
+  };
+
   setPlayerScores(prevScores => {
     const newPlayerScores = new Map(prevScores);
     
@@ -156,7 +189,7 @@ function processFallbackScores(
       
       if (!player) return;
       
-      const teamId = player.teamId === 1 ? "aviator" : "producer";
+      const teamId = getTeamIdentifier(player.teamId);
       const playerKey = `${score.holeNumber}-${player.name}`;
       const teamKey = `${score.holeNumber}-${teamId}`;
       
