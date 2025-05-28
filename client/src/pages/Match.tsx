@@ -146,6 +146,21 @@ const Match = ({ id }: { id: number }) => {
     initialData: [],
   });
 
+  // Debug logging
+  console.log('DEBUG Match component:', {
+    matchId: id,
+    participantsQueryKey: `/api/match-players?matchId=${id}`,
+    participants,
+    participantsLength: participants?.length
+  });
+
+  console.log('DEBUG Match component:', {
+    matchId: id,
+    participantsQueryKey: `/api/match-players?matchId=${id}`,
+    participants,
+    participantsLength: participants?.length
+  });
+
   const { isAdmin } = useAuth();
 
   // Update lock status when match data changes
