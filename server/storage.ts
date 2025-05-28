@@ -880,12 +880,23 @@ export class DBStorage implements IStorage {
   }
 
   async createScoreAndMatch(data: any) {
-    const [newScore] = await db.insert(scores).values(data).returning();
+    // Check if a score already exists for this match and hole to prevent duplicates
+    const existingScore = await this.getScore(data.matchId, data.holeNumber);
+    
+    let resultScore;
+    if (existingScore) {
+      // Update existing score instead of creating a new one
+      resultScore = await this.updateScore(existingScore.id, data);
+    } else {
+      // Create new score
+      const [newScore] = await db.insert(scores).values(data).returning();
+      resultScore = newScore;
+    }
 
-    // After creating the score, update the match state
-    await this.updateMatchState(newScore.matchId);
+    // After creating/updating the score, update the match state
+    await this.updateMatchState(resultScore.matchId);
 
-    return newScore;
+    return resultScore;
   }
 
   // Player Score methods implementation
