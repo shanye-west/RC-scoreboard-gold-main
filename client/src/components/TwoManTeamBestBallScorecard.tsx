@@ -401,7 +401,13 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
         <CardTitle className="text-xl font-bold text-center">2-Man Team Best Ball Scorecard</CardTitle>
       </CardHeader>
       <CardContent className="p-0">
-        {renderScoreGrid()}
+        {localPlayerScores.length === 0 ? (
+          <div className="p-8 text-center text-muted-foreground">
+            No players found for this match. Please add players to the match first.
+          </div>
+        ) : (
+          renderScoreGrid()
+        )}
       </CardContent>
     </Card>
   );

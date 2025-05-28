@@ -583,12 +583,15 @@ const Match = ({ id }: { id: number }) => {
                 ...(hole.id !== undefined ? { id: hole.id } : {})
               }))}
               playerScores={transformRawPlayerData(
-                (participants || []).map(p => ({
-                  id: p.playerId,
-                  name: p.playerName || `Player ${p.playerId}`,
-                  team: p.team as 'aviator' | 'producer',
-                  handicapStrokes: Array(18).fill(0) // Default handicap strokes
-                })),
+                (participants || []).map(p => {
+                  const player = players.find(player => player.id === p.playerId);
+                  return {
+                    id: p.playerId,
+                    name: player?.name || `Player ${p.playerId}`,
+                    team: p.team === 'aviators' ? 'aviator' : 'producer',
+                    handicapStrokes: Array(18).fill(0) // Default handicap strokes
+                  };
+                }).filter(p => p.name !== `Player ${p.id}`), // Only include players with real names
                 (holes || []).map(hole => ({
                   hole_number: hole.number
                 }))
