@@ -56,9 +56,6 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
 }) => {
   const [localPlayerScores, setLocalPlayerScores] = useState<PlayerScore[]>(playerScores);
 
-  // Debug logging
-  console.log('TwoManTeamBestBallScorecard received:', { holes, playerScores, locked });
-
   useEffect(() => {
     setLocalPlayerScores(playerScores);
   }, [playerScores]);
@@ -406,14 +403,7 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
       <CardContent className="p-0">
         {localPlayerScores.length === 0 ? (
           <div className="p-8 text-center text-muted-foreground">
-            <div>No players found for this match. Please add players to the match first.</div>
-            <div className="mt-4 text-sm">
-              <div>DEBUG INFO:</div>
-              <div>playerScores.length: {playerScores.length}</div>
-              <div>localPlayerScores.length: {localPlayerScores.length}</div>
-              <div>holes.length: {holes.length}</div>
-              <div>playerScores: {JSON.stringify(playerScores, null, 2)}</div>
-            </div>
+            No players found for this match. Please add players to the match first.
           </div>
         ) : (
           renderScoreGrid()

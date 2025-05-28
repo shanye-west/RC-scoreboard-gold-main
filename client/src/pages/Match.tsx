@@ -570,67 +570,6 @@ const Match = ({ id }: { id: number }) => {
 
   return (
     <div className="container mx-auto px-4 py-6">
-      {/* Debug Panel */}
-      <div className="mb-4 p-4 bg-yellow-100 border rounded">
-        <h3 className="font-bold mb-2">DEBUG INFO</h3>
-        <div className="text-sm">
-          <div>Match ID: {id}</div>
-          <div>Participants: {participants?.length || 0} items</div>
-          <div>Players: {players?.length || 0} items</div>
-          <div>Participants Loading: {isParticipantsLoading ? 'Yes' : 'No'}</div>
-          <div>Players Loading: {isPlayersLoading ? 'Yes' : 'No'}</div>
-        </div>
-        <div className="mt-2">
-          <button 
-            onClick={async () => {
-              try {
-                const participantsRes = await fetch(`/api/match-players?matchId=${id}`, { credentials: "include" });
-                const participantsData = await participantsRes.json();
-                
-                const playersRes = await fetch('/api/players', { credentials: "include" });
-                const playersData = await playersRes.json();
-                
-                alert(`Direct API Fetch:\nParticipants: ${JSON.stringify(participantsData, null, 2)}\n\nPlayers: ${JSON.stringify(playersData, null, 2)}`);
-              } catch (error) {
-                alert(`Error: ${error}`);
-              }
-            }}
-            className="px-3 py-1 bg-purple-500 text-white rounded text-sm mr-2"
-          >
-            Direct API Test
-          </button>
-          <button 
-            onClick={() => {
-              queryClient.removeQueries({ queryKey: [`/api/match-players?matchId=${id}`] });
-              queryClient.removeQueries({ queryKey: ["/api/players"] });
-              queryClient.invalidateQueries({ queryKey: [`/api/match-players?matchId=${id}`] });
-              queryClient.invalidateQueries({ queryKey: ["/api/players"] });
-            }}
-            className="px-3 py-1 bg-blue-500 text-white rounded text-sm mr-2"
-          >
-            Force Refresh Data
-          </button>
-          <button 
-            onClick={() => {
-              refetchParticipants();
-            }}
-            className="px-3 py-1 bg-red-500 text-white rounded text-sm mr-2"
-          >
-            Refetch Participants
-          </button>
-          <button 
-            onClick={() => {
-              console.log('Raw participants:', participants);
-              console.log('Raw players:', players);
-              alert(`Participants: ${JSON.stringify(participants, null, 2)}\n\nPlayers: ${JSON.stringify(players, null, 2)}`);
-            }}
-            className="px-3 py-1 bg-green-500 text-white rounded text-sm"
-          >
-            Show Raw Data
-          </button>
-        </div>
-      </div>
-
       {isLoading || !match ? (
         <>
           <div className="mb-6">
@@ -701,28 +640,6 @@ const Match = ({ id }: { id: number }) => {
                 console.log('DEBUG: Raw participants from API:', participants);
                 console.log('DEBUG: Raw players from API:', players);
                 
-                // TEMPORARY: Force hardcoded data to test scorecard rendering
-                console.log('DEBUG: Using hardcoded test data');
-                const hardcodedData = [
-                  { id: 1, name: 'Shane Peterson', team: 'aviator' as 'aviator', handicapStrokes: Array(18).fill(0) },
-                  { id: 2, name: 'Ryan Benko', team: 'aviator' as 'aviator', handicapStrokes: Array(18).fill(0) },
-                  { id: 3, name: 'Todd Euckert', team: 'producer' as 'producer', handicapStrokes: Array(18).fill(0) },
-                  { id: 4, name: 'Jake Fabozzi', team: 'producer' as 'producer', handicapStrokes: Array(18).fill(0) }
-                ];
-                return transformRawPlayerData(hardcodedData, (holes || []).map(hole => ({ hole_number: hole.number })));
-                
-                // ORIGINAL LOGIC (commented out for testing):
-                /*
-                // If no data from API, create test data to verify the UI works
-                if (!participants || participants.length === 0) {
-                  console.log('DEBUG: No participants found, creating test data');
-                  const testData = [
-                    { id: 1, name: 'Test Player 1', team: 'aviator' as 'aviator', handicapStrokes: Array(18).fill(0) },
-                    { id: 2, name: 'Test Player 2', team: 'producer' as 'producer', handicapStrokes: Array(18).fill(0) }
-                  ];
-                  return transformRawPlayerData(testData, (holes || []).map(hole => ({ hole_number: hole.number })));
-                }
-                
                 const mappedPlayers = (participants || []).map(p => {
                   const player = players.find(player => player.id === p.playerId);
                   console.log(`DEBUG: Mapping participant ${p.playerId} to player:`, player);
@@ -736,8 +653,8 @@ const Match = ({ id }: { id: number }) => {
                 
                 console.log('DEBUG: Mapped players before filtering:', mappedPlayers);
                 
-                // Don't filter out players - we want all participants
-                const filteredPlayers = mappedPlayers.filter(p => p.name && p.name.trim() !== '');
+                // Only filter out players that don't have real names from the database
+                const filteredPlayers = mappedPlayers.filter(p => p.name && !p.name.startsWith('Player '));
                 console.log('DEBUG: Filtered players:', filteredPlayers);
                 
                 const transformedData = transformRawPlayerData(
@@ -749,7 +666,6 @@ const Match = ({ id }: { id: number }) => {
                 
                 console.log('DEBUG: Final transformed data:', transformedData);
                 return transformedData;
-                */
               })()}
               locked={isLocked}
               onUpdateScores={(playerScores) => {
