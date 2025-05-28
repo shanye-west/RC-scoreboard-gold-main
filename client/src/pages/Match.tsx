@@ -103,7 +103,13 @@ const Match = ({ id }: { id: number }) => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     setIsAdminMode(urlParams.get("admin") === "true");
-  }, []);
+    
+    // Force refresh participants and players data to ensure we have latest data
+    queryClient.removeQueries({ queryKey: [`/api/match-players?matchId=${id}`] });
+    queryClient.removeQueries({ queryKey: ["/api/players"] });
+    queryClient.invalidateQueries({ queryKey: [`/api/match-players?matchId=${id}`] });
+    queryClient.invalidateQueries({ queryKey: ["/api/players"] });
+  }, [id, queryClient]);
 
   // Fetch match data
   const { data: match, isLoading: isMatchLoading } = useQuery<MatchData>({
@@ -136,14 +142,47 @@ const Match = ({ id }: { id: number }) => {
   // Fetch players data for match editing
   const { data: players = [], isLoading: isPlayersLoading } = useQuery<any[]>({
     queryKey: ["/api/players"],
+    queryFn: async () => {
+      console.log('DEBUG: Fetching players');
+      const response = await fetch('/api/players', {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch players');
+      }
+      const data = await response.json();
+      console.log('DEBUG: Players API response:', data);
+      return data;
+    },
     initialData: [],
+    staleTime: 0, // Override global staleTime to ensure fresh data
+    refetchOnMount: true,
   });
 
   // Fetch match participants to populate selected players
-  const { data: participants = [], isLoading: isParticipantsLoading } = useQuery<any[]>({
+  const { data: participants = [], isLoading: isParticipantsLoading, refetch: refetchParticipants } = useQuery<any[]>({
     queryKey: [`/api/match-players?matchId=${id}`],
-    enabled: !!id,
+    queryFn: async () => {
+      console.log('DEBUG: Fetching participants for match', id);
+      if (!id) {
+        console.log('DEBUG: No match ID available');
+        return [];
+      }
+      const response = await fetch(`/api/match-players?matchId=${id}`, {
+        credentials: "include",
+      });
+      if (!response.ok) {
+        throw new Error('Failed to fetch participants');
+      }
+      const data = await response.json();
+      console.log('DEBUG: Participants API response:', data);
+      return data;
+    },
+    enabled: !!id && !isNaN(Number(id)),
     initialData: [],
+    staleTime: 0, // Override global staleTime to ensure fresh data
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
 
   // Debug logging
@@ -531,6 +570,67 @@ const Match = ({ id }: { id: number }) => {
 
   return (
     <div className="container mx-auto px-4 py-6">
+      {/* Debug Panel */}
+      <div className="mb-4 p-4 bg-yellow-100 border rounded">
+        <h3 className="font-bold mb-2">DEBUG INFO</h3>
+        <div className="text-sm">
+          <div>Match ID: {id}</div>
+          <div>Participants: {participants?.length || 0} items</div>
+          <div>Players: {players?.length || 0} items</div>
+          <div>Participants Loading: {isParticipantsLoading ? 'Yes' : 'No'}</div>
+          <div>Players Loading: {isPlayersLoading ? 'Yes' : 'No'}</div>
+        </div>
+        <div className="mt-2">
+          <button 
+            onClick={async () => {
+              try {
+                const participantsRes = await fetch(`/api/match-players?matchId=${id}`, { credentials: "include" });
+                const participantsData = await participantsRes.json();
+                
+                const playersRes = await fetch('/api/players', { credentials: "include" });
+                const playersData = await playersRes.json();
+                
+                alert(`Direct API Fetch:\nParticipants: ${JSON.stringify(participantsData, null, 2)}\n\nPlayers: ${JSON.stringify(playersData, null, 2)}`);
+              } catch (error) {
+                alert(`Error: ${error}`);
+              }
+            }}
+            className="px-3 py-1 bg-purple-500 text-white rounded text-sm mr-2"
+          >
+            Direct API Test
+          </button>
+          <button 
+            onClick={() => {
+              queryClient.removeQueries({ queryKey: [`/api/match-players?matchId=${id}`] });
+              queryClient.removeQueries({ queryKey: ["/api/players"] });
+              queryClient.invalidateQueries({ queryKey: [`/api/match-players?matchId=${id}`] });
+              queryClient.invalidateQueries({ queryKey: ["/api/players"] });
+            }}
+            className="px-3 py-1 bg-blue-500 text-white rounded text-sm mr-2"
+          >
+            Force Refresh Data
+          </button>
+          <button 
+            onClick={() => {
+              refetchParticipants();
+            }}
+            className="px-3 py-1 bg-red-500 text-white rounded text-sm mr-2"
+          >
+            Refetch Participants
+          </button>
+          <button 
+            onClick={() => {
+              console.log('Raw participants:', participants);
+              console.log('Raw players:', players);
+              alert(`Participants: ${JSON.stringify(participants, null, 2)}\n\nPlayers: ${JSON.stringify(players, null, 2)}`);
+            }}
+            className="px-3 py-1 bg-green-500 text-white rounded text-sm"
+          >
+            Show Raw Data
+          </button>
+        </div>
+      </div>
+
       {isLoading || !match ? (
         <>
           <div className="mb-6">
@@ -597,20 +697,60 @@ const Match = ({ id }: { id: number }) => {
                 par: hole.par,
                 ...(hole.id !== undefined ? { id: hole.id } : {})
               }))}
-              playerScores={transformRawPlayerData(
-                (participants || []).map(p => {
+              playerScores={(() => {
+                console.log('DEBUG: Raw participants from API:', participants);
+                console.log('DEBUG: Raw players from API:', players);
+                
+                // TEMPORARY: Force hardcoded data to test scorecard rendering
+                console.log('DEBUG: Using hardcoded test data');
+                const hardcodedData = [
+                  { id: 1, name: 'Shane Peterson', team: 'aviator' as 'aviator', handicapStrokes: Array(18).fill(0) },
+                  { id: 2, name: 'Ryan Benko', team: 'aviator' as 'aviator', handicapStrokes: Array(18).fill(0) },
+                  { id: 3, name: 'Todd Euckert', team: 'producer' as 'producer', handicapStrokes: Array(18).fill(0) },
+                  { id: 4, name: 'Jake Fabozzi', team: 'producer' as 'producer', handicapStrokes: Array(18).fill(0) }
+                ];
+                return transformRawPlayerData(hardcodedData, (holes || []).map(hole => ({ hole_number: hole.number })));
+                
+                // ORIGINAL LOGIC (commented out for testing):
+                /*
+                // If no data from API, create test data to verify the UI works
+                if (!participants || participants.length === 0) {
+                  console.log('DEBUG: No participants found, creating test data');
+                  const testData = [
+                    { id: 1, name: 'Test Player 1', team: 'aviator' as 'aviator', handicapStrokes: Array(18).fill(0) },
+                    { id: 2, name: 'Test Player 2', team: 'producer' as 'producer', handicapStrokes: Array(18).fill(0) }
+                  ];
+                  return transformRawPlayerData(testData, (holes || []).map(hole => ({ hole_number: hole.number })));
+                }
+                
+                const mappedPlayers = (participants || []).map(p => {
                   const player = players.find(player => player.id === p.playerId);
+                  console.log(`DEBUG: Mapping participant ${p.playerId} to player:`, player);
                   return {
                     id: p.playerId,
                     name: player?.name || `Player ${p.playerId}`,
-                    team: p.team === 'aviators' ? 'aviator' : 'producer',
+                    team: (p.team === 'aviators' ? 'aviator' : 'producer') as 'aviator' | 'producer',
                     handicapStrokes: Array(18).fill(0) // Default handicap strokes
                   };
-                }).filter(p => p.name !== `Player ${p.id}`), // Only include players with real names
-                (holes || []).map(hole => ({
-                  hole_number: hole.number
-                }))
-              )}
+                });
+                
+                console.log('DEBUG: Mapped players before filtering:', mappedPlayers);
+                
+                // Don't filter out players - we want all participants
+                const filteredPlayers = mappedPlayers.filter(p => p.name && p.name.trim() !== '');
+                console.log('DEBUG: Filtered players:', filteredPlayers);
+                
+                const transformedData = transformRawPlayerData(
+                  filteredPlayers,
+                  (holes || []).map(hole => ({
+                    hole_number: hole.number
+                  }))
+                );
+                
+                console.log('DEBUG: Final transformed data:', transformedData);
+                return transformedData;
+                */
+              })()}
               locked={isLocked}
               onUpdateScores={(playerScores) => {
                 // Convert player scores to the expected ScoreData format for the API
