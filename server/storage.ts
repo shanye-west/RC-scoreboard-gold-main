@@ -715,6 +715,10 @@ export class DBStorage implements IStorage {
   async deleteMatch(id: number) {
     try {
       await db.transaction(async (tx) => {
+        // Delete all best ball player scores for this match
+        await tx.delete(best_ball_player_scores)
+          .where(eq(best_ball_player_scores.matchId, id));
+
         // Delete all scores for this match
         await tx.delete(scores)
           .where(eq(scores.matchId, id));
@@ -727,11 +731,6 @@ export class DBStorage implements IStorage {
         await tx.delete(matches)
           .where(eq(matches.id, id));
       });
-
-      // Reset sequences
-      await db.execute(`SELECT SETVAL('scores_id_seq', COALESCE((SELECT MAX(id) FROM scores), 0) + 1, false)`);
-      await db.execute(`SELECT SETVAL('match_participants_id_seq', COALESCE((SELECT MAX(id) FROM match_participants), 0) + 1, false)`);
-      await db.execute(`SELECT SETVAL('matches_id_seq', COALESCE((SELECT MAX(id) FROM matches), 0) + 1, false)`);
 
       console.log(`Successfully deleted match ID: ${id} from database`);
     } catch (error) {
