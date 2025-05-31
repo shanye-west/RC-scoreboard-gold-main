@@ -307,7 +307,7 @@ const Match = ({ id }: { id: number }) => {
     saveTimeoutRef.current = setTimeout(() => {
       console.log('Debounced best ball save triggered for:', playerScores);
       
-      if (!playerScores || playerScores.length === 0) return;
+      if (!playerScores || !Array.isArray(playerScores) || playerScores.length === 0) return;
       
       // Group players by team using dynamic team logic
       const aviatorTeamId = getAviatorTeamId();
@@ -909,7 +909,10 @@ const Match = ({ id }: { id: number }) => {
                 }).filter(p => p.name && !p.name.startsWith('Player '));
               })()}
               matchData={match}
-              onScoreUpdate={debouncedSaveBestBallScores}
+              onScoreUpdate={() => {
+                // For Scramble, we don't need to do additional processing
+                // The component handles its own score saving via mutations
+              }}
             />
           )}
           {round?.matchType === "4-man scramble" && (

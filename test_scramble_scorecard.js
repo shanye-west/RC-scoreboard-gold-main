@@ -8,7 +8,7 @@
  * 4. Integrates correctly with the updated Match.tsx
  */
 
-const axios = require('axios');
+import axios from 'axios';
 
 const BASE_URL = 'http://localhost:5000';
 

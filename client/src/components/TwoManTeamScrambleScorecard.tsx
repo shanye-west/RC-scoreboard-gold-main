@@ -102,47 +102,78 @@ const ScrambleScorecard: React.FC<ScrambleScorecardProps> = ({
 
   // Fetch team scores from the server
   const { data: savedScores = [], isLoading } = useQuery({
-    queryKey: ['/api/team-scores', matchId],
+    queryKey: ['/api/scores', matchId],
+    queryFn: async () => {
+      const response = await fetch(`/api/scores?matchId=${matchId}`);
+      if (!response.ok) throw new Error('Failed to fetch scores');
+      return response.json();
+    },
     retry: false,
   });
 
   // Initialize team scores from saved data
   useEffect(() => {
-    if (savedScores && Array.isArray(savedScores)) {
-      const scoresMap = new Map<string, TeamScrambleScore>();
-      
-      savedScores.forEach((score: any) => {
-        if (score?.teamId && score?.holeNumber) {
-          const key = `${score.holeNumber}-${score.teamId}`;
+    if (!savedScores || !Array.isArray(savedScores)) return;
+    
+    const scoresMap = new Map<string, TeamScrambleScore>();
+    const aviatorTeamId = getAviatorTeamId();
+    const producerTeamId = getProducerTeamId();
+    
+    savedScores.forEach((score: any) => {
+      if (score?.holeNumber) {
+        // Map aviatorScore to aviator team
+        if (score.aviatorScore !== null && score.aviatorScore !== undefined) {
+          const key = `${score.holeNumber}-${aviatorTeamId}`;
           scoresMap.set(key, {
-            teamId: score.teamId,
-            score: score.score,
+            teamId: aviatorTeamId,
+            score: score.aviatorScore,
             holeNumber: score.holeNumber
           });
         }
-      });
-      
-      setTeamScores(scoresMap);
-    }
+        
+        // Map producerScore to producer team
+        if (score.producerScore !== null && score.producerScore !== undefined) {
+          const key = `${score.holeNumber}-${producerTeamId}`;
+          scoresMap.set(key, {
+            teamId: producerTeamId,
+            score: score.producerScore,
+            holeNumber: score.holeNumber
+          });
+        }
+      }
+    });
+    
+    setTeamScores(scoresMap);
   }, [savedScores]);
 
   // Mutation for saving team scores
   const saveScoreMutation = useMutation({
-    mutationFn: async ({ teamId, holeNumber, score }: { teamId: number; holeNumber: number; score: number | null }) => {
-      return apiRequest(
-        'POST',
-        `/api/team-scores`,
-        {
-          matchId,
-          teamId,
-          holeNumber,
-          score
-        }
-      );
+    mutationFn: async ({ holeNumber, aviatorScore, producerScore }: { 
+      holeNumber: number; 
+      aviatorScore: number | null; 
+      producerScore: number | null; 
+    }) => {
+      // Check if a score already exists for this hole
+      const existingScore = savedScores.find((s: any) => s?.holeNumber === holeNumber);
+      
+      const scoreData = {
+        matchId,
+        holeNumber,
+        aviatorScore,
+        producerScore
+      };
+      
+      if (existingScore) {
+        // Update existing score
+        return apiRequest('PUT', `/api/scores/${existingScore.id}`, scoreData);
+      } else {
+        // Create new score
+        return apiRequest('POST', '/api/scores', scoreData);
+      }
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/team-scores', matchId] });
-      onScoreUpdate?.({});
+      queryClient.invalidateQueries({ queryKey: ['/api/scores', matchId] });
+      // Note: onScoreUpdate is not called for Scramble as it handles its own mutations
     }
   });
 
@@ -165,8 +196,28 @@ const ScrambleScorecard: React.FC<ScrambleScorecardProps> = ({
       
       setTeamScores(newScores);
       
-      // Save to server
-      await saveScoreMutation.mutateAsync({ teamId, holeNumber, score });
+      // Prepare scores for API - determine which team this is for
+      const aviatorTeamId = getAviatorTeamId();
+      const producerTeamId = getProducerTeamId();
+      
+      let aviatorScore: number | null = null;
+      let producerScore: number | null = null;
+      
+      // Get current scores for both teams for this hole
+      const aviatorKey = `${holeNumber}-${aviatorTeamId}`;
+      const producerKey = `${holeNumber}-${producerTeamId}`;
+      
+      // If this is the team being updated, use the new score, otherwise get existing score
+      if (teamId === aviatorTeamId) {
+        aviatorScore = score;
+        producerScore = newScores.get(producerKey)?.score || null;
+      } else {
+        aviatorScore = newScores.get(aviatorKey)?.score || null;
+        producerScore = score;
+      }
+      
+      // Save to server with both team scores
+      await saveScoreMutation.mutateAsync({ holeNumber, aviatorScore, producerScore });
     } catch (error) {
       console.error("Error saving team score:", error);
     } finally {
