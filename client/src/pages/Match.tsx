@@ -7,6 +7,7 @@ import EnhancedMatchScorecard from "@/components/EnhancedMatchScorecard";
 import TwoManTeamBestBallScorecard, { transformRawPlayerData } from "@/components/TwoManTeamBestBallScorecard";
 import TwoManTeamGrossScorecard from "@/components/TwoManTeamGrossScorecard";
 import FourManTeamScrambleScorecard from "@/components/FourManTeamScrambleScorecard";
+import TwoManTeamScrambleScorecard from "@/components/TwoManTeamScrambleScorecard";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronLeft, Edit, Save, Lock, Unlock } from "lucide-react";
@@ -857,6 +858,26 @@ const Match = ({ id }: { id: number }) => {
               locked={isLocked}
             />
           )}
+          {round?.matchType === "2-man Team Scramble" && (
+            <TwoManTeamScrambleScorecard
+              holes={(holes || []).map(hole => ({
+                hole_number: hole.number,
+                par: hole.par,
+                ...(hole.id !== undefined ? { id: hole.id } : {})
+              }))}
+              scores={(scores || []).map(score => ({
+                holeNumber: score.holeNumber,
+                aviatorScore: score.aviatorScore,
+                producerScore: score.producerScore
+              }))}
+              locked={isLocked}
+              onUpdateScores={(updatedScores) => {
+                updatedScores.forEach(score => {
+                  handleScoreUpdate(score.holeNumber, score.aviatorScore, score.producerScore);
+                });
+              }}
+            />
+          )}
           {round?.matchType === "4-man scramble" && (
             <FourManTeamScrambleScorecard
               holes={(holes || []).map(hole => ({
@@ -870,6 +891,11 @@ const Match = ({ id }: { id: number }) => {
                 producerScore: score.producerScore
               }))}
               locked={isLocked}
+              onUpdateScores={(updatedScores) => {
+                updatedScores.forEach(score => {
+                  handleScoreUpdate(score.holeNumber, score.aviatorScore, score.producerScore);
+                });
+              }}
             />
           )}
         </>
