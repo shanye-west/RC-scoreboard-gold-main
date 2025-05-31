@@ -143,6 +143,22 @@
   background-color: hsl(var(--accent));
 }
 
+/* Match status row */
+.match-status-label {
+  text-align: left;
+  padding-left: 10px;
+  font-weight: 600;
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+}
+
+.match-status-cell {
+  font-weight: 500;
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+}
+
 /* Add these variables to match your project theme */
 :root {
   --aviator-bg: #dbeafe;

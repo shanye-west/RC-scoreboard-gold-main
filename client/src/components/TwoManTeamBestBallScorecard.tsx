@@ -608,20 +608,7 @@ const BestBallScorecard: React.FC<BestBallScorecardProps> = ({
             <div className="empty"></div>
             <div className="empty"></div>
             
-            {/* Team headers */}
-            <div className="team-header aviators">The Aviators</div>
-            <div className="empty"></div>
-            {frontNine.map((hole) => (
-              <div key={`aviator-team-${hole.number}`} className="empty"></div>
-            ))}
-            <div className="team-total">{aviatorFrontTotals.frontNetTotal || 0}</div>
-            {backNine.map((hole) => (
-              <div key={`aviator-team-${hole.number}`} className="empty"></div>
-            ))}
-            <div className="team-total">{aviatorFrontTotals.backNetTotal || 0}</div>
-            <div className="team-total">{aviatorFrontTotals.teamNetTotal || 0}</div>
-            
-            {/* Aviator Players */}
+            {/* Aviator Players (Player 1 and Player 2) */}
             {aviatorPlayersList.map((player) => {
               if (!player?.id) return null;
               return (
@@ -736,8 +723,40 @@ const BestBallScorecard: React.FC<BestBallScorecardProps> = ({
                 </React.Fragment>
               );
             })}
-            
-            {/* Producer team header */}
+
+            {/* Aviator Team Score */}
+            <div className="team-header aviators">The Aviators</div>
+            <div className="empty"></div>
+            {frontNine.map((hole) => (
+              <div key={`aviator-team-${hole.number}`} className="empty"></div>
+            ))}
+            <div className="team-total">{aviatorFrontTotals.frontNetTotal || 0}</div>
+            {backNine.map((hole) => (
+              <div key={`aviator-team-${hole.number}`} className="empty"></div>
+            ))}
+            <div className="team-total">{aviatorFrontTotals.backNetTotal || 0}</div>
+            <div className="team-total">{aviatorFrontTotals.teamNetTotal || 0}</div>
+
+            {/* Match Status Row */}
+            <div className="match-status-label">Match Status</div>
+            <div className="empty"></div>
+            {frontNine.map((hole) => (
+              <div key={`match-status-${hole.number}`} className="match-status-cell">
+                {/* Match status for each hole can be calculated here */}
+                -
+              </div>
+            ))}
+            <div className="empty"></div>
+            {backNine.map((hole) => (
+              <div key={`match-status-${hole.number}`} className="match-status-cell">
+                {/* Match status for each hole can be calculated here */}
+                -
+              </div>
+            ))}
+            <div className="empty"></div>
+            <div className="empty"></div>
+
+            {/* Producer Team Score */}
             <div className="team-header producers">The Producers</div>
             <div className="empty"></div>
             {frontNine.map((hole) => (
@@ -749,8 +768,8 @@ const BestBallScorecard: React.FC<BestBallScorecardProps> = ({
             ))}
             <div className="team-total">{producerFrontTotals.backNetTotal || 0}</div>
             <div className="team-total">{producerFrontTotals.teamNetTotal || 0}</div>
-            
-            {/* Producer Players */}
+
+            {/* Producer Players (Player 1 and Player 2) */}
             {producerPlayersList.map((player) => {
               if (!player?.id) return null;
               return (
