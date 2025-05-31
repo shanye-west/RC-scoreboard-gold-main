@@ -59,19 +59,31 @@ const BestBallScorecard: React.FC<BestBallScorecardProps> = ({
   
   // Determine if the current user can edit scores (admin or participant)
   const canEditScores = useMemo(() => {
+    console.log('Edit permissions check:', { 
+      isAdmin, 
+      user: user?.id, 
+      allPlayersCount: allPlayers.length,
+      participantsCount: participants.length 
+    });
+    
     if (isAdmin) return true;
     if (!user) return false;
     
     // Find all player IDs linked to this user
     const userPlayerIds = allPlayers
-      .filter((p: any) => p?.userId === user.id)
+      .filter((p: any) => user && p?.userId === user.id)
       .map((p: any) => p?.id)
       .filter(Boolean);
     
+    console.log('User player IDs:', userPlayerIds);
+    
     // Check if any of the user's players are participants in this match
-    return participants.some((p: any) => 
+    const canEdit = participants.some((p: any) => 
       userPlayerIds.includes(p?.playerId)
     );
+    
+    console.log('Can edit scores:', canEdit);
+    return canEdit;
   }, [isAdmin, user, allPlayers, participants]);
 
   // Split holes into front and back nine
@@ -532,6 +544,63 @@ const BestBallScorecard: React.FC<BestBallScorecardProps> = ({
     return netScore === minScore;
   };
 
+  // Helper function to generate match status for each hole
+  const generateMatchStatus = (holeNumber: number): { text: string; color: string } => {
+    // Get team best ball scores for this hole
+    const getTeamBestScore = (teamPlayers: any[], holeNum: number): number | null => {
+      const teamScores = teamPlayers
+        .map(player => {
+          if (!player?.name) return null;
+          const key = `${holeNum}-${player.name}`;
+          return playerScores.get(key)?.[0]?.netScore || null;
+        })
+        .filter(score => score !== null && score !== undefined) as number[];
+      
+      return teamScores.length > 0 ? Math.min(...teamScores) : null;
+    };
+
+    const aviatorScore = getTeamBestScore(aviatorPlayersList, holeNumber);
+    const producerScore = getTeamBestScore(producerPlayersList, holeNumber);
+
+    // Check if this hole has been completed
+    if (aviatorScore === null || producerScore === null) {
+      return { text: "-", color: "text-gray-400" }; // Hole not completed yet
+    }
+
+    // Calculate running match status up to this hole
+    let aviatorWins = 0;
+    let producerWins = 0;
+
+    // Loop through all holes up to current hole to calculate cumulative match status
+    for (let h = 1; h <= holeNumber; h++) {
+      const hAviatorScore = getTeamBestScore(aviatorPlayersList, h);
+      const hProducerScore = getTeamBestScore(producerPlayersList, h);
+      
+      if (hAviatorScore !== null && hProducerScore !== null) {
+        if (hAviatorScore < hProducerScore) {
+          aviatorWins++;
+        } else if (hProducerScore < hAviatorScore) {
+          producerWins++;
+        }
+        // Ties don't count in match play
+      }
+    }
+
+    const diff = aviatorWins - producerWins;
+    let text = "AS"; // All Square
+    let color = "text-black";
+
+    if (diff > 0) {
+      text = `A${diff}`;
+      color = "text-aviator";
+    } else if (diff < 0) {
+      text = `P${Math.abs(diff)}`;
+      color = "text-producer";
+    }
+
+    return { text, color };
+  };
+
   // Show loading skeleton when data is loading
   if (isLoading) {
     return (
@@ -659,7 +728,7 @@ const BestBallScorecard: React.FC<BestBallScorecardProps> = ({
                             }
                           }}
                         />
-                        {scoreData?.handicapStrokes > 0 && (
+                        {(scoreData?.handicapStrokes || 0) > 0 && (
                           <span className="handicap-dot">•</span>
                         )}
                         {scoreData?.netScore !== null && scoreData?.netScore !== undefined && (
@@ -709,7 +778,7 @@ const BestBallScorecard: React.FC<BestBallScorecardProps> = ({
                             }
                           }}
                         />
-                        {scoreData?.handicapStrokes > 0 && (
+                        {(scoreData?.handicapStrokes || 0) > 0 && (
                           <span className="handicap-dot">•</span>
                         )}
                         {scoreData?.netScore !== null && scoreData?.netScore !== undefined && (
@@ -748,19 +817,23 @@ const BestBallScorecard: React.FC<BestBallScorecardProps> = ({
             {/* Match Status Row */}
             <div className="match-status-label">Match Status</div>
             <div className="empty"></div>
-            {frontNine.map((hole) => (
-              <div key={`match-status-${hole.number}`} className="match-status-cell">
-                {/* Match status for each hole can be calculated here */}
-                -
-              </div>
-            ))}
+            {frontNine.map((hole) => {
+              const matchStatus = generateMatchStatus(hole.number);
+              return (
+                <div key={`match-status-${hole.number}`} className={`match-status-cell ${matchStatus.color}`}>
+                  {matchStatus.text}
+                </div>
+              );
+            })}
             <div className="empty"></div>
-            {backNine.map((hole) => (
-              <div key={`match-status-${hole.number}`} className="match-status-cell">
-                {/* Match status for each hole can be calculated here */}
-                -
-              </div>
-            ))}
+            {backNine.map((hole) => {
+              const matchStatus = generateMatchStatus(hole.number);
+              return (
+                <div key={`match-status-${hole.number}`} className={`match-status-cell ${matchStatus.color}`}>
+                  {matchStatus.text}
+                </div>
+              );
+            })}
             <div className="empty"></div>
             <div className="empty"></div>
 
@@ -820,7 +893,7 @@ const BestBallScorecard: React.FC<BestBallScorecardProps> = ({
                             }
                           }}
                         />
-                        {scoreData?.handicapStrokes > 0 && (
+                        {(scoreData?.handicapStrokes || 0) > 0 && (
                           <span className="handicap-dot">•</span>
                         )}
                         {scoreData?.netScore !== null && scoreData?.netScore !== undefined && (
@@ -870,7 +943,7 @@ const BestBallScorecard: React.FC<BestBallScorecardProps> = ({
                             }
                           }}
                         />
-                        {scoreData?.handicapStrokes > 0 && (
+                        {(scoreData?.handicapStrokes || 0) > 0 && (
                           <span className="handicap-dot">•</span>
                         )}
                         {scoreData?.netScore !== null && scoreData?.netScore !== undefined && (
