@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import MatchHeader from "@/components/MatchHeader";
@@ -440,6 +440,14 @@ const Match = ({ id }: { id: number }) => {
   const isLoading =
     isMatchLoading || isScoresLoading || isHolesLoading || isRoundLoading || isPlayersLoading || isParticipantsLoading || isTeamsLoading;
 
+  const memoizedScorecardScores = useMemo(() => {
+    return (scores || []).map(score => ({
+      holeNumber: score.holeNumber,
+      aviatorScore: score.aviatorScore,
+      producerScore: score.producerScore
+    }));
+  }, [scores]);
+
   // Calculate proper match play result (e.g., "3&2", "4&3", "1 UP")
   const calculateMatchPlayResult = (completedScores: ScoreData[]): string => {
     if (!completedScores.length) return "";
@@ -865,11 +873,7 @@ const Match = ({ id }: { id: number }) => {
                 par: hole.par,
                 ...(hole.id !== undefined ? { id: hole.id } : {})
               }))}
-              scores={(scores || []).map(score => ({
-                holeNumber: score.holeNumber,
-                aviatorScore: score.aviatorScore,
-                producerScore: score.producerScore
-              }))}
+              scores={memoizedScorecardScores}
               locked={isLocked}
               onUpdateScores={(updatedScores) => {
                 updatedScores.forEach(score => {
@@ -885,11 +889,7 @@ const Match = ({ id }: { id: number }) => {
                 par: hole.par,
                 ...(hole.id !== undefined ? { id: hole.id } : {})
               }))}
-              scores={(scores || []).map(score => ({
-                holeNumber: score.holeNumber,
-                aviatorScore: score.aviatorScore,
-                producerScore: score.producerScore
-              }))}
+              scores={memoizedScorecardScores}
               locked={isLocked}
               onUpdateScores={(updatedScores) => {
                 updatedScores.forEach(score => {
