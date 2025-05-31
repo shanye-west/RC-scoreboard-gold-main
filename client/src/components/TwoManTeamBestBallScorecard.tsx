@@ -872,4 +872,12 @@ const BestBallScorecard: React.FC<BestBallScorecardProps> = ({
   );
 };
 
+// Helper function to transform raw player data for the scorecard
+export const transformRawPlayerData = (players: any[], holes: any[]) => {
+  return {
+    players: players || [],
+    holes: holes || []
+  };
+};
+
 export default BestBallScorecard;

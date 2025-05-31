@@ -4,7 +4,9 @@ import { useLocation } from "wouter";
 import { Skeleton } from "@/components/ui/skeleton";
 import MatchHeader from "@/components/MatchHeader";
 import EnhancedMatchScorecard from "@/components/EnhancedMatchScorecard";
-import { transformRawPlayerData } from "@/components/TwoManTeamBestBallScorecard";
+import TwoManTeamBestBallScorecard, { transformRawPlayerData } from "@/components/TwoManTeamBestBallScorecard";
+import TwoManTeamGrossScorecard from "@/components/TwoManTeamGrossScorecard";
+import FourManTeamScrambleScorecard from "@/components/FourManTeamScrambleScorecard";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronLeft, Edit, Save, Lock, Unlock } from "lucide-react";
@@ -787,85 +789,61 @@ const Match = ({ id }: { id: number }) => {
           {/* Match Scorecard */}
           {round?.matchType === "2-man Team Best Ball" && (
             <TwoManTeamBestBallScorecard
+              matchId={id}
               holes={(holes || []).map(hole => ({
                 hole_number: hole.number,
                 par: hole.par,
                 ...(hole.id !== undefined ? { id: hole.id } : {})
               }))}
-              playerScores={(() => {
-                console.log('DEBUG: Raw participants from API:', participants);
-                console.log('DEBUG: Raw players from API:', players);
-                console.log('DEBUG: Teams data:', teams);
-                
-                // Don't process if teams data isn't loaded yet
-                if (!teams || teams.length === 0) {
-                  console.log('DEBUG: Teams data not loaded yet, returning empty array');
-                  return [];
-                }
-                
-                const mappedPlayers = (participants || []).map(p => {
+              aviatorPlayersList={(() => {
+                if (!teams || teams.length === 0) return [];
+                const aviatorTeamId = getAviatorTeamId();
+                return (participants || [])
+                  .filter(p => p.team === 'aviators')
+                  .map(p => {
+                    const player = players.find(player => player.id === p.playerId);
+                    return {
+                      id: p.playerId,
+                      name: player?.name || `Player ${p.playerId}`,
+                      teamId: aviatorTeamId,
+                      team: 'aviator' as const
+                    };
+                  })
+                  .filter(p => p.name && !p.name.startsWith('Player '));
+              })()}
+              producerPlayersList={(() => {
+                if (!teams || teams.length === 0) return [];
+                const producerTeamId = getProducerTeamId();
+                return (participants || [])
+                  .filter(p => p.team === 'producers')
+                  .map(p => {
+                    const player = players.find(player => player.id === p.playerId);
+                    return {
+                      id: p.playerId,
+                      name: player?.name || `Player ${p.playerId}`,
+                      teamId: producerTeamId,
+                      team: 'producer' as const
+                    };
+                  })
+                  .filter(p => p.name && !p.name.startsWith('Player '));
+              })()}
+              participants={participants || []}
+              allPlayers={(() => {
+                if (!teams || teams.length === 0) return [];
+                return (participants || []).map(p => {
                   const player = players.find(player => player.id === p.playerId);
-                  console.log(`DEBUG: Mapping participant ${p.playerId} to player:`, player);
-                  
-                  // Map string team identifiers to team IDs using actual teams data
-                  let teamId: number;
-                  if (p.team === 'aviators') {
-                    teamId = getAviatorTeamId();
-                  } else if (p.team === 'producers') {
-                    teamId = getProducerTeamId();
-                  } else {
-                    // Fallback: try to find team by string match
-                    const foundTeam = teams.find(t => 
-                      t.shortName.toLowerCase() === p.team?.toLowerCase() ||
-                      t.name.toLowerCase().includes(p.team?.toLowerCase() || '')
-                    );
-                    teamId = foundTeam?.id || 1; // Last resort fallback
-                  }
-                  
-                  console.log(`DEBUG: Team mapping - participant team: "${p.team}" -> teamId: ${teamId}`);
-                  
+                  const teamId = p.team === 'aviators' ? getAviatorTeamId() : getProducerTeamId();
                   return {
                     id: p.playerId,
                     name: player?.name || `Player ${p.playerId}`,
                     teamId: teamId,
-                    team: (p.team === 'aviators' ? 'aviator' : 'producer') as 'aviator' | 'producer',
-                    handicapStrokes: Array(18).fill(0) // Default handicap strokes
+                    team: p.team === 'aviators' ? 'aviator' : 'producer'
                   };
-                });
-                
-                console.log('DEBUG: Mapped players before filtering:', mappedPlayers);
-                
-                // Only filter out players that don't have real names from the database
-                const filteredPlayers = mappedPlayers.filter(p => p.name && !p.name.startsWith('Player '));
-                console.log('DEBUG: Filtered players:', filteredPlayers);
-                
-                const transformedData = transformRawPlayerData(
-                  filteredPlayers,
-                  (holes || []).map(hole => ({
-                    hole_number: hole.number
-                  }))
-                );
-                
-                console.log('DEBUG: Final transformed data:', transformedData);
-                return transformedData;
+                }).filter(p => p.name && !p.name.startsWith('Player '));
               })()}
-              existingScores={(() => {
-                // Don't process scores if teams data isn't loaded yet
-                if (!teams || teams.length === 0) {
-                  console.log('DEBUG: Teams data not loaded yet, returning empty scores array');
-                  return [];
-                }
-                
-                return (scores || []).map(score => ({
-                  holeNumber: score.holeNumber,
-                  teamScores: {
-                    [getAviatorTeamId()]: score.aviatorScore,
-                    [getProducerTeamId()]: score.producerScore
-                  }
-                }));
-              })()}
-              locked={isLocked}
-              onUpdateScores={debouncedSaveBestBallScores}
+              matchData={match}
+              roundHandicapData={[]}
+              onScoreUpdate={debouncedSaveBestBallScores}
             />
           )}
           {round?.matchType === "2-man gross" && (
