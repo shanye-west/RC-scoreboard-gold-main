@@ -790,11 +790,7 @@ const Match = ({ id }: { id: number }) => {
           {round?.matchType === "2-man Team Best Ball" && (
             <TwoManTeamBestBallScorecard
               matchId={id}
-              holes={(holes || []).map(hole => ({
-                hole_number: hole.number,
-                par: hole.par,
-                ...(hole.id !== undefined ? { id: hole.id } : {})
-              }))}
+              holes={holes || []}
               aviatorPlayersList={(() => {
                 if (!teams || teams.length === 0) return [];
                 const aviatorTeamId = getAviatorTeamId();

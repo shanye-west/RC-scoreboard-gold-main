@@ -542,6 +542,14 @@ const BestBallScorecard: React.FC<BestBallScorecardProps> = ({
     );
   }
   
+  // Debug logging
+  console.log('TwoManTeamBestBallScorecard rendered with:', {
+    aviatorPlayersList: aviatorPlayersList.length,
+    producerPlayersList: producerPlayersList.length,
+    holes: holes.length,
+    matchData: matchData?.status
+  });
+
   // Return the scorecard UI
   return (
     <div className="best-ball-scorecard-container">
