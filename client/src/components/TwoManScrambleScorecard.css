@@ -1,0 +1,180 @@
+/* Scramble Scorecard styles adapted from Best Ball scorecard */
+.best-ball-scorecard-container {
+  margin: 0;
+  padding: 0;
+  font-family: var(--font-sans);
+}
+
+.scorecard-grid {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 130px 40px repeat(9, minmax(32px, 1fr)) 50px repeat(9, minmax(32px, 1fr)) 50px 50px;
+  grid-auto-rows: 36px;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  overflow: hidden;
+  background-color: hsl(var(--background));
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.scorecard-grid > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border-right: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
+  font-size: 0.9rem;
+}
+
+/* Headers */
+.header-row {
+  font-weight: 600;
+  background-color: hsl(var(--muted));
+}
+
+.player-header, .handicap-header, .hole-number, .total-header {
+  font-weight: 600;
+  background-color: hsl(var(--muted));
+}
+
+/* Par and Handicap rows */
+.par-row, .handicap-row {
+  background-color: hsl(var(--muted));
+}
+
+.par-label, .handicap-label {
+  text-align: left;
+  padding-left: 10px;
+  font-weight: 600;
+}
+
+.par-value, .handicap-value {
+  font-weight: 500;
+}
+
+/* Team colors */
+:root {
+  --aviator-rgb: 59, 130, 246; /* Blue-500 */
+  --producer-rgb: 239, 68, 68; /* Red-500 */
+  --success-rgb: 34, 197, 94; /* Green-500 */
+}
+
+.text-aviator {
+  color: rgb(var(--aviator-rgb));
+}
+
+.text-producer {
+  color: rgb(var(--producer-rgb));
+}
+
+/* Team headers */
+.team-header {
+  font-weight: 600;
+  text-align: left;
+  padding-left: 10px;
+}
+
+.team-header.aviators {
+  background-color: rgba(var(--aviator-rgb), 0.1);
+  color: rgb(var(--aviator-rgb));
+  border-left: 3px solid rgb(var(--aviator-rgb));
+}
+
+.team-header.producers {
+  background-color: rgba(var(--producer-rgb), 0.1);
+  color: rgb(var(--producer-rgb));
+  border-left: 3px solid rgb(var(--producer-rgb));
+}
+
+/* Score cells */
+.score-input-cell {
+  position: relative;
+  padding: 2px;
+}
+
+.score-input-cell input {
+  width: 100%;
+  height: 100%;
+  border: none;
+  text-align: center;
+  font-size: 14px;
+  background: transparent;
+  outline: none;
+}
+
+/* Total cells */
+.team-total {
+  font-weight: 600;
+  background-color: hsl(var(--accent));
+}
+
+/* Match status row */
+.match-status-label {
+  text-align: left;
+  padding-left: 10px;
+  font-weight: 600;
+  background-color: hsl(var(--muted));
+}
+
+.match-status-cell {
+  font-weight: 600;
+  font-size: 0.8rem;
+}
+
+/* Empty cells */
+.empty {
+  background-color: transparent;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 768px) {
+  .scorecard-grid {
+    grid-template-columns: 100px 30px repeat(9, 28px) 40px repeat(9, 28px) 40px 40px;
+    grid-auto-rows: 32px;
+    font-size: 0.8rem;
+  }
+  
+  .scorecard-grid > div {
+    padding: 0 2px;
+    font-size: 0.75rem;
+  }
+  
+  .score-input-cell input {
+    font-size: 12px;
+  }
+  
+  .team-header {
+    font-size: 0.7rem;
+    padding-left: 4px;
+  }
+  
+  .par-label, .handicap-label, .match-status-label {
+    font-size: 0.7rem;
+    padding-left: 4px;
+  }
+}
+
+/* Focus states for inputs */
+.score-input-cell input:focus {
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+}
+
+.score-input-cell input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Hover effects */
+.score-input-cell:hover:not(.score-input-cell input:disabled) {
+  background-color: hsl(var(--muted));
+}
+
+/* Loading state */
+.scorecard-loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 200px;
+}
