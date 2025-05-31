@@ -860,22 +860,56 @@ const Match = ({ id }: { id: number }) => {
           )}
           {round?.matchType === "2-man Team Scramble" && (
             <TwoManTeamScrambleScorecard
-              holes={(holes || []).map(hole => ({
-                hole_number: hole.number,
-                par: hole.par,
-                ...(hole.id !== undefined ? { id: hole.id } : {})
-              }))}
-              scores={(scores || []).map(score => ({
-                holeNumber: score.holeNumber,
-                aviatorScore: score.aviatorScore,
-                producerScore: score.producerScore
-              }))}
-              locked={isLocked}
-              onUpdateScores={(updatedScores) => {
-                updatedScores.forEach(score => {
-                  handleScoreUpdate(score.holeNumber, score.aviatorScore, score.producerScore);
-                });
-              }}
+              matchId={id}
+              holes={holes || []}
+              aviatorPlayersList={(() => {
+                if (!teams || teams.length === 0) return [];
+                const aviatorTeamId = getAviatorTeamId();
+                return (participants || [])
+                  .filter(p => p.team === 'aviators')
+                  .map(p => {
+                    const player = players.find(player => player.id === p.playerId);
+                    return {
+                      id: p.playerId,
+                      name: player?.name || `Player ${p.playerId}`,
+                      teamId: aviatorTeamId,
+                      team: 'aviator' as const
+                    };
+                  })
+                  .filter(p => p.name && !p.name.startsWith('Player '));
+              })()}
+              producerPlayersList={(() => {
+                if (!teams || teams.length === 0) return [];
+                const producerTeamId = getProducerTeamId();
+                return (participants || [])
+                  .filter(p => p.team === 'producers')
+                  .map(p => {
+                    const player = players.find(player => player.id === p.playerId);
+                    return {
+                      id: p.playerId,
+                      name: player?.name || `Player ${p.playerId}`,
+                      teamId: producerTeamId,
+                      team: 'producer' as const
+                    };
+                  })
+                  .filter(p => p.name && !p.name.startsWith('Player '));
+              })()}
+              participants={participants || []}
+              allPlayers={(() => {
+                if (!teams || teams.length === 0) return [];
+                return (participants || []).map(p => {
+                  const player = players.find(player => player.id === p.playerId);
+                  const teamId = p.team === 'aviators' ? getAviatorTeamId() : getProducerTeamId();
+                  return {
+                    id: p.playerId,
+                    name: player?.name || `Player ${p.playerId}`,
+                    teamId: teamId,
+                    team: p.team === 'aviators' ? 'aviator' : 'producer'
+                  };
+                }).filter(p => p.name && !p.name.startsWith('Player '));
+              })()}
+              matchData={match}
+              onScoreUpdate={debouncedSaveBestBallScores}
             />
           )}
           {round?.matchType === "4-man scramble" && (
