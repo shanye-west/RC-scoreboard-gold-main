@@ -144,7 +144,7 @@ const ScrambleScorecard: React.FC<ScrambleScorecardProps> = ({
     });
     
     setTeamScores(scoresMap);
-  }, [savedScores]);
+  }, [JSON.stringify(savedScores), matchId]);
 
   // Mutation for saving team scores
   const saveScoreMutation = useMutation({
