@@ -6,7 +6,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient } from "@/lib/queryClient";
 import { apiRequest } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import "./BestBallScorecard.css";
+import "./TwoManBestBallScorecard.css";
 
 // Player score interface for Best Ball
 interface BestBallPlayerScore {
