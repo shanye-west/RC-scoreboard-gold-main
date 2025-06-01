@@ -85,7 +85,6 @@ export interface UseBestBallScorecardLogicReturn {
   detailedHoleResults: HoleResultDetails[];
   matchStatus: MatchStatus;
   isSetupComplete: boolean;
-  lowestCourseHandicapValue: number;
 
   // Team Totals
   aviatorTotals: {
@@ -121,12 +120,6 @@ export function useBestBallScorecardLogic(
     return aviatorPlayersCount === 2 && producerPlayersCount === 2 && playersState.length === 4 && holesState.length > 0;
   }, [playersState, holesState]);
 
-  // Calculate lowest course handicap for stroke calculations
-  const lowestCourseHandicapValue = useMemo(() => {
-    if (!isSetupComplete || playersState.length === 0) return 0;
-    return Math.min(...playersState.map(p => p.courseHandicap));
-  }, [playersState, isSetupComplete]);
-
   // Calculate configured players with strokes received
   const configuredPlayers = useMemo((): CalculatedPlayerData[] => {
     if (!isSetupComplete) return playersState.map(p => ({ 
@@ -135,12 +128,11 @@ export function useBestBallScorecardLogic(
       handicapStrokes: Array(holesState.length).fill(0) 
     }));
 
-    const lowestHandicap = lowestCourseHandicapValue;
-    
     return playersState.map(player => {
-      const strokesReceived = player.courseHandicap - lowestHandicap;
+      const strokesReceived = player.courseHandicap; // Directly use courseHandicap
       const handicapStrokes = holesState.map(hole => 
-        (hole.handicap && hole.handicap <= strokesReceived) ? 1 : 0
+        // hole.handicap is the stroke index (1-18 difficulty)
+        (hole.handicap && hole.handicap <= player.courseHandicap) ? 1 : 0
       );
       
       return {
@@ -149,7 +141,7 @@ export function useBestBallScorecardLogic(
         handicapStrokes,
       };
     });
-  }, [playersState, holesState, lowestCourseHandicapValue, isSetupComplete]);
+  }, [playersState, holesState, isSetupComplete]);
 
   // State Management Functions
   const setPlayers = useCallback((newPlayers: PlayerData[]) => {
@@ -419,7 +411,6 @@ export function useBestBallScorecardLogic(
     detailedHoleResults,
     matchStatus,
     isSetupComplete,
-    lowestCourseHandicapValue,
 
     // Team Totals
     aviatorTotals,
