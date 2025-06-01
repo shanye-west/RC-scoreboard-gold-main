@@ -612,6 +612,8 @@ const Match = ({ id }: { id: number }) => {
           {/* Match Scorecard */}
           {round?.matchType === "2-man Team Best Ball" && (
             <TwoManTeamBestBallScorecard
+              roundId={match?.roundId || 0}
+              courseId={round?.courseId || 0}
               holes={(holes || []).map(hole => ({
                 hole_number: hole.number,
                 par: hole.par,
