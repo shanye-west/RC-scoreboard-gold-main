@@ -715,10 +715,6 @@ export class DBStorage implements IStorage {
   async deleteMatch(id: number) {
     try {
       await db.transaction(async (tx) => {
-        // Delete all best ball player scores for this match
-        await tx.delete(best_ball_player_scores)
-          .where(eq(best_ball_player_scores.matchId, id));
-
         // Delete all scores for this match
         await tx.delete(scores)
           .where(eq(scores.matchId, id));
@@ -731,6 +727,11 @@ export class DBStorage implements IStorage {
         await tx.delete(matches)
           .where(eq(matches.id, id));
       });
+
+      // Reset sequences
+      await db.execute(`SELECT SETVAL('scores_id_seq', COALESCE((SELECT MAX(id) FROM scores), 0) + 1, false)`);
+      await db.execute(`SELECT SETVAL('match_participants_id_seq', COALESCE((SELECT MAX(id) FROM match_participants), 0) + 1, false)`);
+      await db.execute(`SELECT SETVAL('matches_id_seq', COALESCE((SELECT MAX(id) FROM matches), 0) + 1, false)`);
 
       console.log(`Successfully deleted match ID: ${id} from database`);
     } catch (error) {
@@ -879,23 +880,12 @@ export class DBStorage implements IStorage {
   }
 
   async createScoreAndMatch(data: any) {
-    // Check if a score already exists for this match and hole to prevent duplicates
-    const existingScore = await this.getScore(data.matchId, data.holeNumber);
-    
-    let resultScore;
-    if (existingScore) {
-      // Update existing score instead of creating a new one
-      resultScore = await this.updateScore(existingScore.id, data);
-    } else {
-      // Create new score
-      const [newScore] = await db.insert(scores).values(data).returning();
-      resultScore = newScore;
-    }
+    const [newScore] = await db.insert(scores).values(data).returning();
 
-    // After creating/updating the score, update the match state
-    await this.updateMatchState(resultScore.matchId);
+    // After creating the score, update the match state
+    await this.updateMatchState(newScore.matchId);
 
-    return resultScore;
+    return newScore;
   }
 
   // Player Score methods implementation

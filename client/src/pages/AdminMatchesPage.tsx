@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
-import { useTeams } from "@/hooks/useTeams";
 import { Loader2, ChevronLeft, Plus, PenSquare, Lock, Unlock } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { getQueryFn, apiRequest, queryClient } from "@/lib/queryClient";
@@ -64,8 +63,6 @@ type SelectedPlayer = {
 export default function AdminMatchesPage() {
   const { isAdmin } = useAuth();
   const { toast } = useToast();
-  const { data: teams = [] } = useTeams();
-  
   const [roundId, setRoundId] = useState<number | null>(null);
   const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
   const [selectedAviatorPlayers, setSelectedAviatorPlayers] = useState<SelectedPlayer[]>([]);
@@ -102,28 +99,10 @@ export default function AdminMatchesPage() {
     queryFn: getQueryFn({ on401: "throw" }),
   });
 
-  const { data: teams = [] } = useTeams();
-
-  // Helper functions for dynamic team identification
-  const getAviatorTeamId = () => {
-    if (!teams.length) return 1;
-    const aviatorTeam = teams.find(t => t.shortName.toLowerCase() === 'aviators' || t.name.toLowerCase().includes('aviator'));
-    return aviatorTeam?.id || 1;
-  };
-
-  const getProducerTeamId = () => {
-    if (!teams.length) return 2;
-    const producerTeam = teams.find(t => t.shortName.toLowerCase() === 'producers' || t.name.toLowerCase().includes('producer'));
-    return producerTeam?.id || 2;
-  };
-
-  const getTeamIdentifier = (teamId: number) => {
-    const aviatorTeamId = getAviatorTeamId();
-    const producerTeamId = getProducerTeamId();
-    if (teamId === aviatorTeamId) return 'aviators';
-    if (teamId === producerTeamId) return 'producers';
-    return 'unknown';
-  };
+  const { data: teams, isLoading: isTeamsLoading } = useQuery<Team[]>({
+    queryKey: ['/api/teams'],
+    queryFn: getQueryFn({ on401: "throw" }),
+  });
 
   const addMatchMutation = useMutation({
     mutationFn: async (matchData: any) => {
@@ -215,7 +194,7 @@ export default function AdminMatchesPage() {
     // Check all active matches in this round
     return matches.some(match => {
       // Skip deleted matches
-      if (match.status === 'deleted') return false;
+      if (match.deleted) return false;
       
       // Split players into arrays
       const aviatorPlayers = match.aviatorPlayers.split(',').map(p => p.trim());
@@ -330,7 +309,7 @@ export default function AdminMatchesPage() {
     return <div>Access denied. You must be an admin to view this page.</div>;
   }
 
-  if (isRoundLoading || isMatchesLoading || isPlayersLoading || !roundId) {
+  if (isRoundLoading || isMatchesLoading || isPlayersLoading || isTeamsLoading || !roundId) {
     return (
       <div className="flex justify-center p-8">
         <Loader2 className="h-8 w-8 animate-spin text-border" />
@@ -512,17 +491,17 @@ export default function AdminMatchesPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    {teams.find(t => t.id === getAviatorTeamId())?.name || "Aviator"} Players
+                    Aviator Players
                   </label>
                   <div className="space-y-3">
                     <Select onValueChange={(value) => handleAddAviatorPlayer(Number(value))}>
                       <SelectTrigger>
-                        <SelectValue placeholder={`Select an ${teams.find(t => t.id === getAviatorTeamId())?.name || "Aviator"} player`} />
+                        <SelectValue placeholder="Select an Aviator player" />
                       </SelectTrigger>
                       <SelectContent>
                         {players?.filter(p => 
                           // Only show Aviator players
-                          p.teamId === getAviatorTeamId() && 
+                          p.teamId === 1 && 
                           // Not already selected in this form
                           !selectedAviatorPlayers.some(sp => sp.id === p.id) &&
                           !selectedProducerPlayers.some(sp => sp.id === p.id) &&
@@ -539,7 +518,7 @@ export default function AdminMatchesPage() {
                     {/* Selected Aviator Players */}
                     {selectedAviatorPlayers.length > 0 && (
                       <div className="mt-2">
-                        <p className="text-sm font-medium mb-1">Selected {teams.find(t => t.id === getAviatorTeamId())?.name || "Aviator"} Players:</p>
+                        <p className="text-sm font-medium mb-1">Selected Aviator Players:</p>
                         <div className="flex flex-wrap gap-2">
                           {selectedAviatorPlayers.map(player => (
                             <div key={player.id} className="flex items-center gap-1 bg-blue-100 p-1 rounded">
@@ -568,17 +547,17 @@ export default function AdminMatchesPage() {
 
                 <div>
                   <label className="block text-sm font-medium mb-1">
-                    {teams.find(t => t.id === getProducerTeamId())?.name || "Producer"} Players
+                    Producer Players
                   </label>
                   <div className="space-y-3">
                     <Select onValueChange={(value) => handleAddProducerPlayer(Number(value))}>
                       <SelectTrigger>
-                        <SelectValue placeholder={`Select a ${teams.find(t => t.id === getProducerTeamId())?.name || "Producer"} player`} />
+                        <SelectValue placeholder="Select a Producer player" />
                       </SelectTrigger>
                       <SelectContent>
                         {players?.filter(p => 
                           // Only show Producer players
-                          p.teamId === getProducerTeamId() && 
+                          p.teamId === 2 && 
                           // Not already selected in this form
                           !selectedProducerPlayers.some(sp => sp.id === p.id) &&
                           !selectedAviatorPlayers.some(sp => sp.id === p.id) &&
@@ -595,7 +574,7 @@ export default function AdminMatchesPage() {
                     {/* Selected Producer Players */}
                     {selectedProducerPlayers.length > 0 && (
                       <div className="mt-2">
-                        <p className="text-sm font-medium mb-1">Selected {teams.find(t => t.id === getProducerTeamId())?.name || "Producer"} Players:</p>
+                        <p className="text-sm font-medium mb-1">Selected Producer Players:</p>
                         <div className="flex flex-wrap gap-2">
                           {selectedProducerPlayers.map(player => (
                             <div key={player.id} className="flex items-center gap-1 bg-red-100 p-1 rounded">

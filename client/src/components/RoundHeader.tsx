@@ -1,5 +1,4 @@
 import { useLocation } from "wouter";
-import { useTeams } from "@/hooks/useTeams";
 import aviatorsLogo from "../assets/Aviators.svg";
 import producersLogo from "../assets/Producers.svg";
 
@@ -31,27 +30,6 @@ const RoundHeader = ({
   matchCount 
 }: RoundHeaderProps) => {
   const [_, navigate] = useLocation();
-  
-  // Load teams for dynamic team handling
-  const { data: teams = [] } = useTeams();
-
-  // Helper functions to get team data dynamically
-  const getAviatorTeam = () => {
-    return teams.find(team => 
-      team.name.toLowerCase().includes('aviator') || 
-      team.name.toLowerCase().includes('aviators')
-    ) || { id: 1, name: 'Aviators', shortName: 'AVI' };
-  };
-
-  const getProducerTeam = () => {
-    return teams.find(team => 
-      team.name.toLowerCase().includes('producer') || 
-      team.name.toLowerCase().includes('producers')
-    ) || { id: 2, name: 'Producers', shortName: 'PROD' };
-  };
-
-  const aviatorTeam = getAviatorTeam();
-  const producerTeam = getProducerTeam();
 
   const handleBackClick = () => {
     navigate('/');
@@ -79,7 +57,7 @@ const RoundHeader = ({
         <div className="p-4">
           <div className="flex justify-between items-center mb-3">
             <div className="flex items-center">
-              <img src={aviatorsLogo} alt={aviatorTeam.name} className="w-20 h-20 mr-5" />
+              <img src={aviatorsLogo} alt="Aviators" className="w-20 h-20 mr-5" />
               <div className="relative">
                 <span className="font-heading font-bold text-3xl">{aviatorScore}</span>
                 {pendingAviatorScore > 0 && (
@@ -99,7 +77,7 @@ const RoundHeader = ({
                   </span>
                 )}
               </div>
-              <img src={producersLogo} alt={producerTeam.name} className="w-20 h-20 ml-5" />
+              <img src={producersLogo} alt="Producers" className="w-20 h-20 ml-5" />
             </div>
           </div>
 

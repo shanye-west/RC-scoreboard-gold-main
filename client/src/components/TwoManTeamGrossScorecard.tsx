@@ -1,7 +1,6 @@
 import React from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { useTeams } from "@/hooks/useTeams";
 
 interface HoleScore {
   holeNumber: number;
@@ -22,25 +21,6 @@ const TwoManTeamGrossScorecard: React.FC<ScorecardProps> = ({
   locked = false,
   onUpdateScores,
 }) => {
-  const { data: teams = [] } = useTeams();
-
-  // Helper functions to get team IDs dynamically
-  const getAviatorTeamId = () => {
-    const aviatorTeam = teams.find(team => 
-      team.name.toLowerCase().includes('aviator') || 
-      team.name.toLowerCase().includes('aviators')
-    );
-    return aviatorTeam?.id || 1;
-  };
-
-  const getProducerTeamId = () => {
-    const producerTeam = teams.find(team => 
-      team.name.toLowerCase().includes('producer') || 
-      team.name.toLowerCase().includes('producers')
-    );
-    return producerTeam?.id || 2;
-  };
-
   const handleScoreChange = (holeIndex: number, team: 'aviator' | 'producer', value: string) => {
     const newScores = [...scores];
     const score = parseInt(value, 10);
@@ -50,10 +30,6 @@ const TwoManTeamGrossScorecard: React.FC<ScorecardProps> = ({
       onUpdateScores?.(newScores);
     }
   };
-
-  // Get team names dynamically
-  const aviatorTeamName = teams.find(team => team.id === getAviatorTeamId())?.name || 'Aviators';
-  const producerTeamName = teams.find(team => team.id === getProducerTeamId())?.name || 'Producers';
 
   return (
     <Card className="rounded-2xl shadow p-4">
@@ -65,8 +41,8 @@ const TwoManTeamGrossScorecard: React.FC<ScorecardProps> = ({
           <thead>
             <tr>
               <th>Hole</th>
-              <th>{aviatorTeamName}</th>
-              <th>{producerTeamName}</th>
+              <th>Aviators</th>
+              <th>Producers</th>
             </tr>
           </thead>
           <tbody>

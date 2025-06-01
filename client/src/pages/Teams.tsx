@@ -1,8 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useLocation } from "wouter";
-import { useState, useEffect } from "react";
-import { useTeams, getTeamIdentifier } from "@/hooks/useTeams";
+import { useState } from "react";
+import aviatorsText from "@/assets/aviators-text.svg";
+import producersText from "@/assets/producers-text.svg";
 
 interface Player {
   id: number;
@@ -13,17 +14,20 @@ interface Player {
   ties: number;
 }
 
+interface Team {
+  id: number;
+  name: string;
+  colorCode: string;
+}
+
 const Teams = () => {
   const [_, navigate] = useLocation();
-  const { data: teams = [], isLoading: isTeamsLoading } = useTeams();
-  const [activeTeamId, setActiveTeamId] = useState<number | null>(null);
+  const [activeTeam, setActiveTeam] = useState<number>(1); // Start with Aviators (teamId: 1)
 
-  // Set default active team to the first team when teams are loaded
-  useEffect(() => {
-    if (teams.length > 0 && activeTeamId === null) {
-      setActiveTeamId(teams[0].id);
-    }
-  }, [teams, activeTeamId]);
+  // Fetch teams data
+  const { data: teams, isLoading: isTeamsLoading } = useQuery<Team[]>({
+    queryKey: ['/api/teams'],
+  });
 
   // Fetch players data
   const { data: players, isLoading: isPlayersLoading } = useQuery<Player[]>({
@@ -74,35 +78,6 @@ const Teams = () => {
     });
   }
 
-  // Helper function to get team logo/image
-  const getTeamLogo = (teamId: number) => {
-    const team = teams.find(t => t.id === teamId);
-    if (!team) return null;
-    
-    const identifier = getTeamIdentifier(team);
-    // Try to import team-specific assets
-    try {
-      return require(`@/assets/${identifier}-text.svg`);
-    } catch {
-      // Fallback if no specific asset exists
-      return null;
-    }
-  };
-
-  // Helper function to get team color
-  const getTeamColor = (teamId: number) => {
-    const team = teams.find(t => t.id === teamId);
-    if (team?.colorCode) {
-      // Convert hex color to rgba with opacity
-      const hex = team.colorCode.replace('#', '');
-      const r = parseInt(hex.substr(0, 2), 16);
-      const g = parseInt(hex.substr(2, 2), 16);
-      const b = parseInt(hex.substr(4, 2), 16);
-      return `rgba(${r}, ${g}, ${b}, 0.05)`;
-    }
-    return 'rgba(128, 128, 128, 0.05)'; // Default gray
-  };
-
   return (
     <div className="container mx-auto px-4 py-6">
       <h1 className="font-heading text-2xl font-bold mb-6">Team Rosters</h1>
@@ -121,31 +96,27 @@ const Teams = () => {
       ) : (
         <div className="space-y-8">
           <div className="flex justify-between items-center border-b-2 border-gray-200 pb-4">
-            {teams.map(team => {
-              const teamLogo = getTeamLogo(team.id);
-              return (
-                <div 
-                  key={team.id}
-                  className={`cursor-pointer transition-opacity ${
-                    activeTeamId === team.id ? 'opacity-100' : 'opacity-30'
-                  }`}
-                  onClick={() => setActiveTeamId(team.id)}
-                >
-                  {teamLogo ? (
-                    <img src={teamLogo} alt={team.name} className="h-8" />
-                  ) : (
-                    <div className="h-8 px-4 py-1 bg-gray-200 rounded text-center">
-                      {team.name}
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+            <div 
+              className={`cursor-pointer transition-opacity ${
+                activeTeam === 1 ? 'opacity-100' : 'opacity-30'
+              }`}
+              onClick={() => setActiveTeam(1)}
+            >
+              <img src={aviatorsText} alt="The Aviators" className="h-8" />
+            </div>
+            <div 
+              className={`cursor-pointer transition-opacity ${
+                activeTeam === 2 ? 'opacity-100' : 'opacity-30'
+              }`}
+              onClick={() => setActiveTeam(2)}
+            >
+              <img src={producersText} alt="The Producers" className="h-8" />
+            </div>
           </div>
           
           <div className="divide-y">
-            {activeTeamId && playersByTeam?.[activeTeamId]?.map((player: Player) => {
-              const teamColor = getTeamColor(activeTeamId);
+            {playersByTeam?.[activeTeam]?.map((player: Player) => {
+              const teamColor = activeTeam === 1 ? 'rgba(0, 74, 127, 0.05)' : 'rgba(128, 0, 0, 0.05)';
               return (
                 <div 
                   key={player.id} 

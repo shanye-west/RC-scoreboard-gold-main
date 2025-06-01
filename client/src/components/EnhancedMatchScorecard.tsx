@@ -17,14 +17,13 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/hooks/use-auth";
-import { useTeams, useTeamById, getTeamIdentifier, getTeamById } from "@/hooks/useTeams";
 import "./BestBallScorecard.css";
 
 // Player score interface for Best Ball
 interface BestBallPlayerScore {
   player: string;
   score: number | null;
-  teamId: number;
+  teamId: string;
   playerId: number;
   holeNumber: number;
   handicapStrokes?: number;
@@ -32,10 +31,11 @@ interface BestBallPlayerScore {
   isBestBall?: boolean;
 }
 
-// Score interface for team totals - now generic for any teams
+// Score interface for team totals
 interface HoleScore {
   holeNumber: number;
-  [key: string]: number | null; // Dynamic team scores
+  aviatorScore: number | null;
+  producerScore: number | null;
 }
 
 interface ScorecardProps {
@@ -88,22 +88,6 @@ const EnhancedMatchScorecard: React.FC<ScorecardProps> = ({
 }) => {
   const { toast } = useToast();
   const { user } = useAuth();
-  
-  // Load teams for dynamic team handling
-  const { data: teams, isLoading: teamsLoading } = useTeams();
-  
-  // Helper functions to get team IDs dynamically
-  const getAviatorTeamId = () => {
-    if (!teams?.length) return 1; // fallback
-    const aviatorTeam = teams.find(t => t.shortName.toLowerCase() === 'aviators' || t.name.toLowerCase().includes('aviator'));
-    return aviatorTeam?.id || 1;
-  };
-  
-  const getProducerTeamId = () => {
-    if (!teams?.length) return 2; // fallback
-    const producerTeam = teams.find(t => t.shortName.toLowerCase() === 'producers' || t.name.toLowerCase().includes('producer'));
-    return producerTeam?.id || 2;
-  };
   
   const [playerScores, setPlayerScores] = useState<Map<string, BestBallPlayerScore[]>>(new Map());
   const [playerTotals, setPlayerTotals] = useState<Map<string, number>>(new Map());
@@ -221,7 +205,7 @@ const EnhancedMatchScorecard: React.FC<ScorecardProps> = ({
         
         if (!player) return;
         
-        const teamId = player.teamId; // Use the actual team ID number
+        const teamId = player.teamId === 1 ? "aviator" : "producer";
         const playerKey = `${score.holeNumber}-${player.name}`;
         const teamKey = `${score.holeNumber}-${teamId}`;
         
@@ -256,47 +240,70 @@ const EnhancedMatchScorecard: React.FC<ScorecardProps> = ({
       if (holes && holes.length > 0) {
         holes.forEach(hole => {
           const holeNumber = hole.number;
+          const aviatorTeamKey = `${holeNumber}-aviator`;
+          const producerTeamKey = `${holeNumber}-producer`;
           
-          // Get unique team IDs from the player lists
-          const teamIds = new Set([
-            ...aviatorPlayersList.map(p => p.teamId),
-            ...producerPlayersList.map(p => p.teamId)
-          ]);
-          
-          // Calculate best ball for each team
-          teamIds.forEach(teamId => {
-            const teamKey = `${holeNumber}-${teamId}`;
-            const teamScores = newPlayerScores.get(teamKey) || [];
+          // CALCULATE BEST BALL FOR AVIATORS
+          const aviatorScores = newPlayerScores.get(aviatorTeamKey) || [];
+          if (aviatorScores.length > 0) {
+            // Reset all isBestBall flags initially
+            aviatorScores.forEach(s => { s.isBestBall = false; });
             
-            if (teamScores.length > 0) {
-              // Reset all isBestBall flags initially
-              teamScores.forEach(s => { s.isBestBall = false; });
-              
-              // Filter valid scores and find lowest net
-              const validScores = teamScores.filter(s => s.score !== null);
-              
-              if (validScores.length > 0) {
-                // Make sure all net scores are calculated
-                validScores.forEach(s => {
-                  if (s.netScore === null && s.score !== null) {
-                    s.netScore = Math.max(0, s.score - (s.handicapStrokes || 0));
-                  }
-                });
-                
-                // Find lowest net score
-                const lowestNetPlayer = validScores.reduce((lowest, current) => {
-                  const lowestNet = lowest.netScore !== null ? lowest.netScore : 99;
-                  const currentNet = current.netScore !== null ? current.netScore : 99;
-                  return (currentNet ?? 99) < (lowestNet ?? 99) ? current : lowest;
-                }, validScores[0]);
-                
-                // Mark as best ball
-                if (lowestNetPlayer) {
-                  lowestNetPlayer.isBestBall = true;
+            // Filter valid scores and find lowest net
+            const validScores = aviatorScores.filter(s => s.score !== null);
+            
+            if (validScores.length > 0) {
+              // Make sure all net scores are calculated
+              validScores.forEach(s => {
+                if (s.netScore === null && s.score !== null) {
+                  s.netScore = Math.max(0, s.score - (s.handicapStrokes || 0));
                 }
+              });
+              
+              // Find lowest net score
+              const lowestNetPlayer = validScores.reduce((lowest, current) => {
+                const lowestNet = lowest.netScore !== null ? lowest.netScore : 99;
+                const currentNet = current.netScore !== null ? current.netScore : 99;
+                return (currentNet ?? 99) < (lowestNet ?? 99) ? current : lowest;
+              }, validScores[0]);
+              
+              // Mark as best ball
+              if (lowestNetPlayer) {
+                lowestNetPlayer.isBestBall = true;
               }
             }
-          });
+          }
+          
+          // CALCULATE BEST BALL FOR PRODUCERS
+          const producerScores = newPlayerScores.get(producerTeamKey) || [];
+          if (producerScores.length > 0) {
+            // Reset all isBestBall flags initially
+            producerScores.forEach(s => { s.isBestBall = false; });
+            
+            // Filter valid scores and find lowest net
+            const validScores = producerScores.filter(s => s.score !== null);
+            
+            if (validScores.length > 0) {
+              // Make sure all net scores are calculated
+              validScores.forEach(s => {
+                if (s.netScore === null && s.score !== null) {
+                  s.netScore = Math.max(0, s.score - (s.handicapStrokes || 0));
+                }
+              });
+              
+              // Find lowest net score
+              const lowestNetPlayer = validScores.reduce((lowest, current) => {
+                const lowestNet = lowest.netScore !== null ? lowest.netScore : 99;
+                const currentNet = current.netScore !== null ? current.netScore : 99;
+                return (currentNet ?? 99) < (lowestNet ?? 99) ? current : lowest;
+              }, validScores[0]);
+              
+              // Mark as best ball
+              if (lowestNetPlayer) {
+                lowestNetPlayer.isBestBall = true;
+              }
+            }
+          }
         });
       }
       
@@ -308,7 +315,7 @@ const EnhancedMatchScorecard: React.FC<ScorecardProps> = ({
   const handlePlayerScoreChange = async (
     holeNumber: number,
     playerName: string,
-    teamId: number,
+    teamId: string,
     value: string,
     target: HTMLInputElement,
   ) => {
@@ -327,8 +334,9 @@ const EnhancedMatchScorecard: React.FC<ScorecardProps> = ({
     }
     
     // Find player
-    const playerId = [...aviatorPlayersList, ...producerPlayersList]
-      .find((p: any) => p.name === playerName && p.teamId === teamId)?.id;
+    const playerId = teamId === "aviator"
+      ? aviatorPlayersList.find((p: any) => p.name === playerName)?.id
+      : producerPlayersList.find((p: any) => p.name === playerName)?.id;
     
     if (!playerId) {
       console.warn("Could not find player ID for", playerName);
@@ -463,7 +471,7 @@ const EnhancedMatchScorecard: React.FC<ScorecardProps> = ({
   const getPlayerScoreValue = (
     holeNumber: number,
     playerName: string,
-    teamId: number,
+    teamId: string,
   ): string => {
     // For individual player scores, check for player-specific key first
     const playerKey = `${holeNumber}-${playerName}`;
@@ -492,7 +500,7 @@ const EnhancedMatchScorecard: React.FC<ScorecardProps> = ({
   const isLowestScore = (
     holeNumber: number,
     playerName: string,
-    teamId: number,
+    teamId: string,
   ): boolean => {
     const teamKey = `${holeNumber}-${teamId}`;
     const holeScores = playerScores.get(teamKey) || [];
@@ -817,7 +825,7 @@ const EnhancedMatchScorecard: React.FC<ScorecardProps> = ({
                                 const isLowest = isLowestScore(
                                   hole.number,
                                   player.name,
-                                  getAviatorTeamId(),
+                                  "aviator",
                                 );
                                 return (
                                   <td key={hole.number} className="py-2 px-2 text-center scorecard-cell">
@@ -845,13 +853,13 @@ const EnhancedMatchScorecard: React.FC<ScorecardProps> = ({
                                         value={getPlayerScoreValue(
                                           hole.number,
                                           player.name,
-                                          getAviatorTeamId(),
+                                          "aviator",
                                         )}
                                         onChange={(e) =>
                                           handlePlayerScoreChange(
                                             hole.number,
                                             player.name,
-                                            getAviatorTeamId(),
+                                            "aviator",
                                             e.target.value,
                                             e.target
                                           )
@@ -862,8 +870,10 @@ const EnhancedMatchScorecard: React.FC<ScorecardProps> = ({
                                       />
                                       {/* Net Score Display */}
                                       {playerScores.get(`${hole.number}-${player.name}`)?.[0]?.score !== null && 
+                                       !!playerScores.get(`${hole.number}-${player.name}`)?.[0] &&
                                        playerScores.get(`${hole.number}-${player.name}`)?.[0] &&
-                                       (playerScores.get(`${hole.number}-${player.name}`)?.[0]?.handicapStrokes ?? 0) > 0 && (
+                                       !!playerScores.get(`${hole.number}-${player.name}`)?.[0] &&
+                                       playerScores.get(`${hole.number}-${player.name}`)?.[0]?.handicapStrokes > 0 && (
                                         <span className="net-score">
                                           ({playerScores.get(`${hole.number}-${player.name}`)?.[0]?.netScore})
                                         </span>
@@ -958,7 +968,7 @@ const EnhancedMatchScorecard: React.FC<ScorecardProps> = ({
                                 const isLowest = isLowestScore(
                                   hole.number,
                                   player.name,
-                                  getProducerTeamId(),
+                                  "producer",
                                 );
                                 return (
                                   <td key={hole.number} className="py-2 px-2 text-center scorecard-cell">
@@ -986,13 +996,13 @@ const EnhancedMatchScorecard: React.FC<ScorecardProps> = ({
                                         value={getPlayerScoreValue(
                                           hole.number,
                                           player.name,
-                                          getProducerTeamId(),
+                                          "producer",
                                         )}
                                         onChange={(e) =>
                                           handlePlayerScoreChange(
                                             hole.number,
                                             player.name,
-                                            getProducerTeamId(),
+                                            "producer",
                                             e.target.value,
                                             e.target
                                           )
@@ -1007,7 +1017,7 @@ const EnhancedMatchScorecard: React.FC<ScorecardProps> = ({
                                         return (
                                           playerScoreObj !== undefined &&
                                           playerScoreObj.score !== null &&
-                                          (playerScoreObj.handicapStrokes ?? 0) > 0 && (
+                                          playerScoreObj.handicapStrokes > 0 && (
                                             <span className="net-score">
                                               ({playerScoreObj.netScore})
                                             </span>

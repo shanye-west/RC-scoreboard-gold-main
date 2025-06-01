@@ -6,7 +6,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useAuth } from "@/hooks/use-auth";
-import { useTeams } from "@/hooks/useTeams";
 import RoundHeader from "@/components/RoundHeader";
 import MatchesList from "@/components/MatchesList";
 import { Badge } from "@/components/ui/badge";
@@ -57,33 +56,6 @@ interface MatchFormData {
 const Round = ({ id }: RoundProps) => {
   const { isAdmin } = useAuth();
   const { toast } = useToast();
-  
-  // Load teams for dynamic team handling
-  const { data: teams = [] } = useTeams();
-  
-  // Helper functions to get team IDs dynamically
-  const getAviatorTeamId = () => {
-    if (!teams?.length) return 1; // fallback
-    const aviatorTeam = teams.find(t => t.shortName.toLowerCase() === 'aviators' || t.name.toLowerCase().includes('aviator'));
-    return aviatorTeam?.id || 1;
-  };
-  
-  const getProducerTeamId = () => {
-    if (!teams?.length) return 2; // fallback
-    const producerTeam = teams.find(t => t.shortName.toLowerCase() === 'producers' || t.name.toLowerCase().includes('producer'));
-    return producerTeam?.id || 2;
-  };
-  
-  // Helper function to get team identifier from ID
-  const getTeamIdentifier = (teamId: number) => {
-    const aviatorTeamId = getAviatorTeamId();
-    const producerTeamId = getProducerTeamId();
-    
-    if (teamId === aviatorTeamId) return 'aviators';
-    if (teamId === producerTeamId) return 'producers';
-    return 'unknown';
-  };
-  
   const [isCreateMatchDialogOpen, setIsCreateMatchDialogOpen] = useState(false);
   const [matchFormData, setMatchFormData] = useState<MatchFormData>({
     name: "",
@@ -131,23 +103,21 @@ const Round = ({ id }: RoundProps) => {
       const newMatch = await matchRes.json();
       
       // Then add all the aviator players
-      const aviatorTeamIdentifier = getTeamIdentifier(getAviatorTeamId());
       const aviatorPromises = formData.aviatorPlayerIds.map(playerId => {
         const playerPayload = {
           matchId: newMatch.id,
           playerId,
-          team: aviatorTeamIdentifier,
+          team: "aviators",
         };
         return apiRequest("POST", `/api/match-players`, playerPayload);
       });
       
       // Add all the producer players
-      const producerTeamIdentifier = getTeamIdentifier(getProducerTeamId());
       const producerPromises = formData.producerPlayerIds.map(playerId => {
         const playerPayload = {
           matchId: newMatch.id,
           playerId,
-          team: producerTeamIdentifier,
+          team: "producers",
         };
         return apiRequest("POST", `/api/match-players`, playerPayload);
       });
@@ -205,8 +175,8 @@ const Round = ({ id }: RoundProps) => {
   };
   
   // Handle adding a player to a team
-  const handleAddPlayer = (playerId: number, team: 'team1' | 'team2') => {
-    if (team === 'team1') {
+  const handleAddPlayer = (playerId: number, team: 'aviator' | 'producer') => {
+    if (team === 'aviator') {
       if (matchFormData.aviatorPlayerIds.length < playersPerTeam) {
         setMatchFormData({
           ...matchFormData,
@@ -224,8 +194,8 @@ const Round = ({ id }: RoundProps) => {
   };
   
   // Handle removing a player from a team
-  const handleRemovePlayer = (playerId: number, team: 'team1' | 'team2') => {
-    if (team === 'team1') {
+  const handleRemovePlayer = (playerId: number, team: 'aviator' | 'producer') => {
+    if (team === 'aviator') {
       setMatchFormData({
         ...matchFormData,
         aviatorPlayerIds: matchFormData.aviatorPlayerIds.filter(id => id !== playerId),
@@ -383,7 +353,7 @@ const Round = ({ id }: RoundProps) => {
                             <div>
                               <div className="flex justify-between items-center mb-2">
                                 <label className="block text-sm font-medium">
-                                  {teams.find(t => t.id === getAviatorTeamId())?.name || "Aviators"} Team Players ({matchFormData.aviatorPlayerIds.length}/{playersPerTeam})
+                                  Aviators Team Players ({matchFormData.aviatorPlayerIds.length}/{playersPerTeam})
                                 </label>
                               </div>
                               
@@ -395,7 +365,7 @@ const Round = ({ id }: RoundProps) => {
                                       {getPlayerName(playerId)}
                                       <button 
                                         type="button"
-                                        onClick={() => handleRemovePlayer(playerId, 'team1')}
+                                        onClick={() => handleRemovePlayer(playerId, 'aviator')}
                                         className="ml-1 text-xs"
                                       >
                                         <X className="h-3 w-3 inline" />
@@ -408,7 +378,7 @@ const Round = ({ id }: RoundProps) => {
                               {/* Available Aviator Players */}
                               <div className="grid grid-cols-2 gap-2">
                                 {players
-                                  .filter(p => p.teamId === getAviatorTeamId())
+                                  .filter(p => p.teamId === 1)
                                   .filter(p => !matchFormData.aviatorPlayerIds.includes(p.id))
                                   .map(player => (
                                     <Button
@@ -420,7 +390,7 @@ const Round = ({ id }: RoundProps) => {
                                         isPlayerInRound(player.id) || 
                                         matchFormData.aviatorPlayerIds.length >= playersPerTeam
                                       }
-                                      onClick={() => handleAddPlayer(player.id, 'team1')}
+                                      onClick={() => handleAddPlayer(player.id, 'aviator')}
                                       className="text-xs justify-start"
                                     >
                                       <span className="truncate">{player.name}</span>
@@ -440,7 +410,7 @@ const Round = ({ id }: RoundProps) => {
                             <div>
                               <div className="flex justify-between items-center mb-2">
                                 <label className="block text-sm font-medium">
-                                  {teams.find(t => t.id === getProducerTeamId())?.name || "Producers"} Team Players ({matchFormData.producerPlayerIds.length}/{playersPerTeam})
+                                  Producers Team Players ({matchFormData.producerPlayerIds.length}/{playersPerTeam})
                                 </label>
                               </div>
                               
@@ -452,7 +422,7 @@ const Round = ({ id }: RoundProps) => {
                                       {getPlayerName(playerId)}
                                       <button 
                                         type="button"
-                                        onClick={() => handleRemovePlayer(playerId, 'team2')}
+                                        onClick={() => handleRemovePlayer(playerId, 'producer')}
                                         className="ml-1 text-xs"
                                       >
                                         <X className="h-3 w-3 inline" />
@@ -465,7 +435,7 @@ const Round = ({ id }: RoundProps) => {
                               {/* Available Producer Players */}
                               <div className="grid grid-cols-2 gap-2">
                                 {players
-                                  .filter(p => p.teamId === getProducerTeamId())
+                                  .filter(p => p.teamId === 2)
                                   .filter(p => !matchFormData.producerPlayerIds.includes(p.id))
                                   .map(player => (
                                     <Button
@@ -477,7 +447,7 @@ const Round = ({ id }: RoundProps) => {
                                         isPlayerInRound(player.id) || 
                                         matchFormData.producerPlayerIds.length >= playersPerTeam
                                       }
-                                      onClick={() => handleAddPlayer(player.id, 'team2')}
+                                      onClick={() => handleAddPlayer(player.id, 'producer')}
                                       className="text-xs justify-start"
                                     >
                                       <span className="truncate">{player.name}</span>

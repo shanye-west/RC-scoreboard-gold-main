@@ -1,0 +1,310 @@
+/* Two Man Team Best Ball Scorecard - Golf Genius Style */
+.scorecard-container {
+  margin: 0;
+  padding: 16px;
+  font-family: var(--font-sans);
+  overflow-x: auto;
+}
+
+.scorecard-grid {
+  width: 100%;
+  min-width: 1200px;
+  display: grid;
+  grid-template-columns: 130px 40px repeat(9, minmax(40px, 1fr)) 50px repeat(9, minmax(40px, 1fr)) 50px 50px;
+  grid-auto-rows: 40px;
+  border: 2px solid hsl(var(--border));
+  border-radius: var(--radius);
+  overflow: hidden;
+  background-color: hsl(var(--background));
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  font-size: 14px;
+}
+
+.scorecard-grid > div {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 4px;
+  border-right: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
+  font-weight: 500;
+}
+
+/* Headers */
+.header-cell {
+  font-weight: 700;
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+}
+
+.player-header, .handicap-header, .hole-number, .total-header {
+  font-weight: 700;
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+}
+
+/* Par and Handicap rows */
+.par-label, .handicap-label {
+  text-align: left;
+  padding-left: 12px;
+  font-weight: 700;
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  font-size: 12px;
+}
+
+.par-value, .handicap-value {
+  font-weight: 600;
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+}
+
+.empty {
+  background-color: hsl(var(--muted));
+}
+
+.aviator-bg {
+  background-color: var(--aviator-bg);
+}
+
+.producer-bg {
+  background-color: var(--producer-bg);
+}
+
+/* Team headers */
+.team-header {
+  grid-column: 1;
+  font-weight: 700;
+  text-align: left;
+  padding-left: 12px;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.team-header.aviators {
+  background-color: var(--aviator-bg);
+  color: var(--aviator-text);
+  border-left: 4px solid var(--aviator-accent);
+}
+
+.team-header.producers {
+  background-color: var(--producer-bg);
+  color: var(--producer-text);
+  border-left: 4px solid var(--producer-accent);
+}
+
+/* Player rows */
+.player-name {
+  text-align: left;
+  padding-left: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.player-name.aviator {
+  color: var(--aviator-text);
+  background-color: rgba(59, 130, 246, 0.05);
+  border-left: 4px solid var(--aviator-accent);
+}
+
+.player-name.producer {
+  color: var(--producer-text);
+  background-color: rgba(239, 68, 68, 0.05);
+  border-left: 4px solid var(--producer-accent);
+}
+
+.player-handicap {
+  font-weight: 600;
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  font-size: 13px;
+}
+
+/* Score cells */
+.score-input-cell {
+  position: relative;
+  padding: 2px;
+  background-color: hsl(var(--background));
+}
+
+.score-input-cell.best-score {
+  background-color: rgba(34, 197, 94, 0.15);
+  border: 2px solid rgba(34, 197, 94, 0.4);
+  font-weight: 700;
+}
+
+.score-input {
+  width: 100%;
+  height: 32px;
+  border: none;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  background: transparent;
+  outline: none;
+  border-radius: 4px;
+}
+
+.score-input:focus {
+  background-color: rgba(59, 130, 246, 0.1);
+  outline: 2px solid var(--aviator-accent);
+}
+
+.score-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Net score display */
+.net-score {
+  position: absolute;
+  bottom: 2px;
+  right: 2px;
+  font-size: 9px;
+  font-weight: 600;
+  color: hsl(var(--muted-foreground));
+  background-color: rgba(255, 255, 255, 0.8);
+  padding: 1px 2px;
+  border-radius: 2px;
+}
+
+.handicap-dot {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  color: hsl(var(--destructive));
+  font-size: 16px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+/* Total cells */
+.player-total {
+  font-weight: 700;
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  font-size: 14px;
+}
+
+.team-total {
+  font-weight: 700;
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  font-size: 14px;
+}
+
+.team-total.aviators {
+  background-color: var(--aviator-accent);
+  color: white;
+}
+
+.team-total.producers {
+  background-color: var(--producer-accent);
+  color: white;
+}
+
+/* Match status row */
+.match-status {
+  text-align: center;
+  font-weight: 700;
+  font-size: 14px;
+  background: linear-gradient(135deg, var(--aviator-bg) 0%, white 50%, var(--producer-bg) 100%);
+  color: hsl(var(--foreground));
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border: 2px solid hsl(var(--border));
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.match-status-bg {
+  background: linear-gradient(135deg, var(--aviator-bg) 0%, white 50%, var(--producer-bg) 100%);
+  border-left: 1px solid rgba(0, 0, 0, 0.1);
+  border-right: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+/* CSS Variables for team colors */
+:root {
+  --aviator-bg: #dbeafe;
+  --aviator-text: #1e3a8a;
+  --aviator-accent: #3b82f6;
+  
+  --producer-bg: #fee2e2;
+  --producer-text: #7f1d1d;
+  --producer-accent: #ef4444;
+}
+
+/* Mobile optimizations */
+@media (max-width: 1024px) {
+  .scorecard-container {
+    padding: 8px;
+  }
+  
+  .scorecard-grid {
+    font-size: 12px;
+    grid-template-columns: 100px 35px repeat(9, 35px) 45px repeat(9, 35px) 45px 45px;
+    grid-auto-rows: 36px;
+    min-width: 1000px;
+  }
+
+  .player-name {
+    font-size: 11px;
+    padding-left: 8px;
+  }
+
+  .score-input {
+    font-size: 12px;
+    height: 28px;
+  }
+}
+
+@media (max-width: 768px) {
+  .scorecard-container {
+    padding: 4px;
+  }
+  
+  .scorecard-grid {
+    font-size: 11px;
+    grid-template-columns: 90px 30px repeat(9, 30px) 40px repeat(9, 30px) 40px 40px;
+    grid-auto-rows: 32px;
+    min-width: 900px;
+  }
+
+  .player-name {
+    font-size: 10px;
+    padding-left: 6px;
+  }
+
+  .score-input {
+    font-size: 11px;
+    height: 24px;
+  }
+
+  .net-score {
+    font-size: 8px;
+  }
+}
+
+/* Scrollbar styling for horizontal scroll */
+.scorecard-container::-webkit-scrollbar {
+  height: 8px;
+}
+
+.scorecard-container::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+.scorecard-container::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+
+.scorecard-container::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}

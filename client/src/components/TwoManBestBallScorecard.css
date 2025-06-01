@@ -143,44 +143,6 @@
   background-color: hsl(var(--accent));
 }
 
-/* Match status row */
-.match-status-label {
-  text-align: left;
-  padding-left: 10px;
-  font-weight: 600;
-  background-color: hsl(var(--muted));
-  color: hsl(var(--foreground));
-}
-
-.match-status-cell {
-  font-weight: 500;
-  background-color: hsl(var(--muted));
-  color: hsl(var(--muted-foreground));
-  font-size: 12px;
-  text-align: center;
-}
-
-/* Match status color classes */
-.match-status-cell.text-aviator {
-  color: var(--aviator-text);
-  font-weight: 600;
-}
-
-.match-status-cell.text-producer {
-  color: var(--producer-text);
-  font-weight: 600;
-}
-
-.match-status-cell.text-black {
-  color: hsl(var(--foreground));
-  font-weight: 600;
-}
-
-.match-status-cell.text-gray-400 {
-  color: hsl(var(--muted-foreground));
-  font-weight: 400;
-}
-
 /* Add these variables to match your project theme */
 :root {
   --aviator-bg: #dbeafe;

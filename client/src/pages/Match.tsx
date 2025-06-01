@@ -1,13 +1,39 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useState, useEffect, useCallback, useRef, useMemo } from "react";
-import { useLocation } from "wouter";
-import { Skeleton } from "@/components/ui/skeleton";
+import { useState, useEffect } from "react";
+import { useLocation } f  // Debug logging
+  console.log('DEBUG Match component:', {
+    matchId: id,
+    participantsQueryKey: `/api/match-players?matchId=${id}`,
+    participants,
+    participantsLength: participants?.length,
+    players,
+    playersLength: players?.length,
+    isParticipantsLoading,
+    isPlayersLoading
+  });
+
+  // Debug transformation
+  if (participants && participants.length > 0 && players && players.length > 0) {
+    const transformedData = (participants || []).map(p => {
+      const player = players.find(player => player.id === p.playerId);
+      const result = {
+        id: p.playerId,
+        name: player?.name || `Player ${p.playerId}`,
+        team: p.team === 'aviators' ? 'aviator' : 'producer',
+        handicapStrokes: Array(18).fill(0),
+        foundPlayer: !!player
+      };
+      console.log('DEBUG participant transformation:', { participant: p, foundPlayer: !!player, result });
+      return result;
+    });
+    console.log('DEBUG transformed data before filter:', transformedData);
+    const filteredData = transformedData.filter(p => p.name !== `Player ${p.id}`);
+    console.log('DEBUG transformed data after filter:', filteredData);
+  }import { Skeleton } from "@/components/ui/skeleton";
 import MatchHeader from "@/components/MatchHeader";
-import EnhancedMatchScorecard from "@/components/EnhancedMatchScorecard";
 import TwoManTeamBestBallScorecard, { transformRawPlayerData } from "@/components/TwoManTeamBestBallScorecard";
 import TwoManTeamGrossScorecard from "@/components/TwoManTeamGrossScorecard";
 import FourManTeamScrambleScorecard from "@/components/FourManTeamScrambleScorecard";
-import TwoManTeamScrambleScorecard from "@/components/TwoManTeamScrambleScorecard";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 import { ChevronLeft, Edit, Save, Lock, Unlock } from "lucide-react";
@@ -34,7 +60,6 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { useAuth } from "@/hooks/use-auth";
-import { useTeams } from "@/hooks/useTeams";
 
 interface MatchProps {
   id: number;
@@ -84,41 +109,6 @@ interface ScoreData {
 const Match = ({ id }: { id: number }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  const { user } = useAuth();
-  
-  // Load teams for dynamic team handling
-  const { data: teams = [], isLoading: isTeamsLoading } = useTeams();
-  
-  // Helper functions to get team IDs dynamically
-  const getAviatorTeamId = () => {
-    if (!teams?.length) return 1; // fallback
-    const aviatorTeam = teams.find(t => 
-      t.shortName.toLowerCase() === 'aviators' || 
-      t.name.toLowerCase().includes('aviator')
-    );
-    console.log('DEBUG: getAviatorTeamId - found team:', aviatorTeam);
-    return aviatorTeam?.id || 1;
-  };
-  
-  const getProducerTeamId = () => {
-    if (!teams?.length) return 2; // fallback
-    const producerTeam = teams.find(t => 
-      t.shortName.toLowerCase() === 'producers' || 
-      t.name.toLowerCase().includes('producer')
-    );
-    console.log('DEBUG: getProducerTeamId - found team:', producerTeam);
-    return producerTeam?.id || 2;
-  };
-  
-  // Helper function to get team identifier from ID
-  const getTeamIdentifier = (teamId: number) => {
-    const aviatorTeamId = getAviatorTeamId();
-    const producerTeamId = getProducerTeamId();
-    
-    if (teamId === aviatorTeamId) return 'aviators';
-    if (teamId === producerTeamId) return 'producers';
-    return 'unknown';
-  };
 
   const [showCompletionDialog, setShowCompletionDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
@@ -141,13 +131,7 @@ const Match = ({ id }: { id: number }) => {
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     setIsAdminMode(urlParams.get("admin") === "true");
-    
-    // Force refresh participants and players data to ensure we have latest data
-    queryClient.removeQueries({ queryKey: [`/api/match-players?matchId=${id}`] });
-    queryClient.removeQueries({ queryKey: ["/api/players"] });
-    queryClient.invalidateQueries({ queryKey: [`/api/match-players?matchId=${id}`] });
-    queryClient.invalidateQueries({ queryKey: ["/api/players"] });
-  }, [id, queryClient]);
+  }, []);
 
   // Fetch match data
   const { data: match, isLoading: isMatchLoading } = useQuery<MatchData>({
@@ -180,68 +164,52 @@ const Match = ({ id }: { id: number }) => {
   // Fetch players data for match editing
   const { data: players = [], isLoading: isPlayersLoading } = useQuery<any[]>({
     queryKey: ["/api/players"],
-    queryFn: async () => {
-      console.log('DEBUG: Fetching players');
-      const response = await fetch('/api/players', {
-        credentials: "include",
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch players');
-      }
-      const data = await response.json();
-      console.log('DEBUG: Players API response:', data);
-      return data;
-    },
     initialData: [],
-    staleTime: 0, // Override global staleTime to ensure fresh data
+    staleTime: 0, // Always refetch to avoid stale cache issues
     refetchOnMount: true,
   });
 
   // Fetch match participants to populate selected players
-  const { data: participants = [], isLoading: isParticipantsLoading, refetch: refetchParticipants } = useQuery<any[]>({
+  const { data: participants = [], isLoading: isParticipantsLoading } = useQuery<any[]>({
     queryKey: [`/api/match-players?matchId=${id}`],
-    queryFn: async () => {
-      console.log('DEBUG: Fetching participants for match', id);
-      if (!id) {
-        console.log('DEBUG: No match ID available');
-        return [];
-      }
-      const response = await fetch(`/api/match-players?matchId=${id}`, {
-        credentials: "include",
-      });
-      if (!response.ok) {
-        throw new Error('Failed to fetch participants');
-      }
-      const data = await response.json();
-      console.log('DEBUG: Participants API response:', data);
-      return data;
-    },
-    enabled: !!id && !isNaN(Number(id)),
+    enabled: !!id,
     initialData: [],
-    staleTime: 0, // Override global staleTime to ensure fresh data
+    staleTime: 0, // Always refetch to avoid stale cache issues
     refetchOnMount: true,
-    refetchOnWindowFocus: true,
   });
 
   // Debug logging
-  console.log('DEBUG Match component:', {
+  console.log('DEBUG Match component comprehensive:', {
     matchId: id,
     participantsQueryKey: `/api/match-players?matchId=${id}`,
     participants,
-    participantsLength: participants?.length
+    participantsLength: participants?.length,
+    players,
+    playersLength: players?.length,
+    isParticipantsLoading,
+    isPlayersLoading
   });
 
-  console.log('DEBUG Match component:', {
-    matchId: id,
-    participantsQueryKey: `/api/match-players?matchId=${id}`,
-    participants,
-    participantsLength: participants?.length
-  });
+  // Debug transformation when we have data
+  if (participants && participants.length > 0 && players && players.length > 0) {
+    const transformedData = (participants || []).map(p => {
+      const player = players.find(player => player.id === p.playerId);
+      const result = {
+        id: p.playerId,
+        name: player?.name || `Player ${p.playerId}`,
+        team: p.team === 'aviators' ? 'aviator' : 'producer',
+        handicapStrokes: Array(18).fill(0),
+        foundPlayer: !!player
+      };
+      console.log('DEBUG participant transformation:', { participant: p, foundPlayer: !!player, result });
+      return result;
+    });
+    console.log('DEBUG transformed data before filter:', transformedData);
+    const filteredData = transformedData.filter(p => p.name !== `Player ${p.id}`);
+    console.log('DEBUG transformed data after filter:', filteredData);
+  }
 
   const { isAdmin } = useAuth();
-
-  // Debounce timer for score saving
-  const saveTimeoutRef = useRef<NodeJS.Timeout>();
 
   // Update lock status when match data changes
   useEffect(() => {
@@ -298,118 +266,6 @@ const Match = ({ id }: { id: number }) => {
     },
   });
 
-  // Debounced save function for TwoManTeamBestBallScorecard
-  const debouncedSaveBestBallScores = useCallback((playerScores: any[]) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    
-    saveTimeoutRef.current = setTimeout(() => {
-      console.log('Debounced best ball save triggered for:', playerScores);
-      
-      if (!playerScores || !Array.isArray(playerScores) || playerScores.length === 0) return;
-      
-      // Group players by team using dynamic team logic
-      const aviatorTeamId = getAviatorTeamId();
-      const producerTeamId = getProducerTeamId();
-      
-      const aviatorPlayers = playerScores.filter(p => p.teamId === aviatorTeamId);
-      const producerPlayers = playerScores.filter(p => p.teamId === producerTeamId);
-      
-      // For each hole, calculate the best ball score for each team
-      const holeCount = playerScores[0]?.scores?.length || 18;
-      
-      for (let holeIndex = 0; holeIndex < holeCount; holeIndex++) {
-        // Get best aviator net score for this hole (best ball uses net scores)
-        const aviatorNetScores = aviatorPlayers
-          .map(p => p.netScores?.[holeIndex])
-          .filter(score => score !== null && score !== undefined) as number[];
-        
-        // Get best producer net score for this hole
-        const producerNetScores = producerPlayers
-          .map(p => p.netScores?.[holeIndex])
-          .filter(score => score !== null && score !== undefined) as number[];
-        
-        const aviatorBestScore = aviatorNetScores.length > 0 ? Math.min(...aviatorNetScores) : null;
-        const producerBestScore = producerNetScores.length > 0 ? Math.min(...producerNetScores) : null;
-        
-        // Check if this hole's scores have changed from what's currently saved
-        const existingScore = scores?.find(s => s.holeNumber === holeIndex + 1);
-        const hasChanged = !existingScore || 
-          existingScore.aviatorScore !== aviatorBestScore || 
-          existingScore.producerScore !== producerBestScore;
-        
-        // Only save if scores have changed and at least one team has a score
-        if (hasChanged && (aviatorBestScore !== null || producerBestScore !== null)) {
-          const scoreData = {
-            matchId: id,
-            holeNumber: holeIndex + 1, // API expects 1-based hole numbers
-            aviatorScore: aviatorBestScore,
-            producerScore: producerBestScore,
-          };
-          
-          console.log(`Saving best ball score for hole ${holeIndex + 1}:`, scoreData);
-          updateScoreMutation.mutate(scoreData);
-        }
-      }
-    }, 1000); // Wait 1 second after last change before saving
-  }, [id, scores, updateScoreMutation, getAviatorTeamId, getProducerTeamId]);
-
-  // Debounced save function for legacy scorecards
-  const debouncedSaveScores = useCallback((playerScores: any[]) => {
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    
-    saveTimeoutRef.current = setTimeout(() => {
-      console.log('Debounced save triggered for:', playerScores);
-      
-      // Group players by team using dynamic team logic
-      const aviatorTeamId = getAviatorTeamId();
-      const producerTeamId = getProducerTeamId();
-      
-      const aviatorPlayers = playerScores.filter(p => p.team === getTeamIdentifier(aviatorTeamId));
-      const producerPlayers = playerScores.filter(p => p.team === getTeamIdentifier(producerTeamId));
-      
-      // For each hole, calculate the best ball score for each team
-      const holeCount = playerScores[0]?.scores?.length || 0;
-      
-      for (let holeIndex = 0; holeIndex < holeCount; holeIndex++) {
-        // Get best aviator score for this hole
-        const aviatorScores = aviatorPlayers
-          .map(p => p.scores[holeIndex])
-          .filter(score => score !== null && score !== undefined) as number[];
-        
-        // Get best producer score for this hole
-        const producerScores = producerPlayers
-          .map(p => p.scores[holeIndex])
-          .filter(score => score !== undefined) as number[];
-        
-        const aviatorBestScore = aviatorScores.length > 0 ? Math.min(...aviatorScores) : null;
-        const producerBestScore = producerScores.length > 0 ? Math.min(...producerScores) : null;
-        
-        // Check if this hole's scores have changed from what's currently saved
-        const existingScore = scores?.find(s => s.holeNumber === holeIndex + 1);
-        const hasChanged = !existingScore || 
-          existingScore.aviatorScore !== aviatorBestScore || 
-          existingScore.producerScore !== producerBestScore;
-        
-        // Only save if scores have changed and at least one team has a score
-        if (hasChanged && (aviatorBestScore !== null || producerBestScore !== null)) {
-          const scoreData = {
-            matchId: id,
-            holeNumber: holeIndex + 1, // API expects 1-based hole numbers
-            aviatorScore: aviatorBestScore,
-            producerScore: producerBestScore,
-          };
-          
-          console.log(`Saving score for hole ${holeIndex + 1}:`, scoreData);
-          updateScoreMutation.mutate(scoreData);
-        }
-      }
-    }, 1000); // Wait 1 second after last change before saving
-  }, [id, scores, updateScoreMutation]);
-
   // Toggle lock mutation
   const toggleLockMutation = useMutation({
     mutationFn: async (locked: boolean) => {
@@ -438,15 +294,7 @@ const Match = ({ id }: { id: number }) => {
   });
 
   const isLoading =
-    isMatchLoading || isScoresLoading || isHolesLoading || isRoundLoading || isPlayersLoading || isParticipantsLoading || isTeamsLoading;
-
-  const memoizedScorecardScores = useMemo(() => {
-    return (scores || []).map(score => ({
-      holeNumber: score.holeNumber,
-      aviatorScore: score.aviatorScore,
-      producerScore: score.producerScore
-    }));
-  }, [scores]);
+    isMatchLoading || isScoresLoading || isHolesLoading || isRoundLoading || isPlayersLoading || isParticipantsLoading;
 
   // Calculate proper match play result (e.g., "3&2", "4&3", "1 UP")
   const calculateMatchPlayResult = (completedScores: ScoreData[]): string => {
@@ -603,16 +451,13 @@ const Match = ({ id }: { id: number }) => {
     }
 
     if (participants && participants.length > 0 && players && players.length > 0) {
-      const aviatorTeamIdentifier = getTeamIdentifier(getAviatorTeamId());
-      const producerTeamIdentifier = getTeamIdentifier(getProducerTeamId());
-      
       const aviators = participants
-        .filter((p: any) => p.team === aviatorTeamIdentifier)
+        .filter((p: any) => p.team === "aviators")
         .map((p: any) => players.find((player: any) => player.id === p.playerId))
         .filter(Boolean);
 
       const producers = participants
-        .filter((p: any) => p.team === producerTeamIdentifier)
+        .filter((p: any) => p.team === "producers")
         .map((p: any) => players.find((player: any) => player.id === p.playerId))
         .filter(Boolean);
 
@@ -671,18 +516,15 @@ const Match = ({ id }: { id: number }) => {
         .filter((p: any) => !existingProducerPlayerIds.includes(p.id));
 
       // Players to remove
-      const aviatorTeamIdentifier = getTeamIdentifier(getAviatorTeamId());
-      const producerTeamIdentifier = getTeamIdentifier(getProducerTeamId());
-      
       const aviatorPlayersToRemove = participants
         .filter((p: any) => 
-          p.team === aviatorTeamIdentifier && 
+          p.team === "aviators" && 
           !selectedAviatorPlayers.some((s: any) => s.id === p.playerId)
         );
 
       const producerPlayersToRemove = participants
         .filter((p: any) => 
-          p.team === producerTeamIdentifier && 
+          p.team === "producers" && 
           !selectedProducerPlayers.some((s: any) => s.id === p.playerId)
         );
 
@@ -696,7 +538,7 @@ const Match = ({ id }: { id: number }) => {
         await addParticipantMutation.mutateAsync({
           matchId: match.id,
           playerId: player.id,
-          team: aviatorTeamIdentifier
+          team: "aviators"
         });
       }
 
@@ -705,7 +547,7 @@ const Match = ({ id }: { id: number }) => {
         await addParticipantMutation.mutateAsync({
           matchId: match.id,
           playerId: player.id,
-          team: producerTeamIdentifier
+          team: "producers"
         });
       }
 
@@ -798,57 +640,30 @@ const Match = ({ id }: { id: number }) => {
           {/* Match Scorecard */}
           {round?.matchType === "2-man Team Best Ball" && (
             <TwoManTeamBestBallScorecard
-              matchId={id}
-              holes={holes || []}
-              aviatorPlayersList={(() => {
-                if (!teams || teams.length === 0) return [];
-                const aviatorTeamId = getAviatorTeamId();
-                return (participants || [])
-                  .filter(p => p.team === 'aviators')
-                  .map(p => {
-                    const player = players.find(player => player.id === p.playerId);
-                    return {
-                      id: p.playerId,
-                      name: player?.name || `Player ${p.playerId}`,
-                      teamId: aviatorTeamId,
-                      team: 'aviator' as const
-                    };
-                  })
-                  .filter(p => p.name && !p.name.startsWith('Player '));
-              })()}
-              producerPlayersList={(() => {
-                if (!teams || teams.length === 0) return [];
-                const producerTeamId = getProducerTeamId();
-                return (participants || [])
-                  .filter(p => p.team === 'producers')
-                  .map(p => {
-                    const player = players.find(player => player.id === p.playerId);
-                    return {
-                      id: p.playerId,
-                      name: player?.name || `Player ${p.playerId}`,
-                      teamId: producerTeamId,
-                      team: 'producer' as const
-                    };
-                  })
-                  .filter(p => p.name && !p.name.startsWith('Player '));
-              })()}
-              participants={participants || []}
-              allPlayers={(() => {
-                if (!teams || teams.length === 0) return [];
-                return (participants || []).map(p => {
+              holes={(holes || []).map(hole => ({
+                hole_number: hole.number,
+                par: hole.par,
+                ...(hole.id !== undefined ? { id: hole.id } : {})
+              }))}
+              playerScores={transformRawPlayerData(
+                (participants || []).map(p => {
                   const player = players.find(player => player.id === p.playerId);
-                  const teamId = p.team === 'aviators' ? getAviatorTeamId() : getProducerTeamId();
                   return {
                     id: p.playerId,
                     name: player?.name || `Player ${p.playerId}`,
-                    teamId: teamId,
-                    team: p.team === 'aviators' ? 'aviator' : 'producer'
+                    team: p.team === 'aviators' ? 'aviator' : 'producer',
+                    handicapStrokes: Array(18).fill(0) // Default handicap strokes
                   };
-                }).filter(p => p.name && !p.name.startsWith('Player '));
-              })()}
-              matchData={match}
-              roundHandicapData={[]}
-              onScoreUpdate={debouncedSaveBestBallScores}
+                }).filter(p => p.name !== `Player ${p.id}`), // Only include players with real names
+                (holes || []).map(hole => ({
+                  hole_number: hole.number
+                }))
+              )}
+              locked={isLocked}
+              onUpdateScores={(playerScores) => {
+                // Convert player scores to the expected ScoreData format for the API
+                console.log('Player scores updated:', playerScores);
+              }}
             />
           )}
           {round?.matchType === "2-man gross" && (
@@ -866,175 +681,19 @@ const Match = ({ id }: { id: number }) => {
               locked={isLocked}
             />
           )}
-          {round?.matchType === "2-man Team Scramble" && (
-            <TwoManTeamScrambleScorecard
-              matchId={id}
-              holes={holes || []}
-              aviatorPlayersList={(() => {
-                if (!teams || teams.length === 0) return [];
-                const aviatorTeamId = getAviatorTeamId();
-                return (participants || [])
-                  .filter(p => p.team === 'aviators')
-                  .map(p => {
-                    const player = players.find(player => player.id === p.playerId);
-                    return {
-                      id: p.playerId,
-                      name: player?.name || `Player ${p.playerId}`,
-                      teamId: aviatorTeamId,
-                      team: 'aviator' as const
-                    };
-                  })
-                  .filter(p => p.name && !p.name.startsWith('Player '));
-              })()}
-              producerPlayersList={(() => {
-                if (!teams || teams.length === 0) return [];
-                const producerTeamId = getProducerTeamId();
-                return (participants || [])
-                  .filter(p => p.team === 'producers')
-                  .map(p => {
-                    const player = players.find(player => player.id === p.playerId);
-                    return {
-                      id: p.playerId,
-                      name: player?.name || `Player ${p.playerId}`,
-                      teamId: producerTeamId,
-                      team: 'producer' as const
-                    };
-                  })
-                  .filter(p => p.name && !p.name.startsWith('Player '));
-              })()}
-              participants={participants || []}
-              allPlayers={(() => {
-                if (!teams || teams.length === 0) return [];
-                return (participants || []).map(p => {
-                  const player = players.find(player => player.id === p.playerId);
-                  const teamId = p.team === 'aviators' ? getAviatorTeamId() : getProducerTeamId();
-                  return {
-                    id: p.playerId,
-                    name: player?.name || `Player ${p.playerId}`,
-                    teamId: teamId,
-                    team: p.team === 'aviators' ? 'aviator' : 'producer'
-                  };
-                }).filter(p => p.name && !p.name.startsWith('Player '));
-              })()}
-              matchData={match}
-              onScoreUpdate={() => {
-                // For Scramble, we don't need to do additional processing
-                // The component handles its own score saving via mutations
-              }}
-            />
-          )}
-          {round?.matchType === "2-man Team Shamble" && (
-            <TwoManTeamScrambleScorecard
-              matchId={id}
-              holes={holes || []}
-              aviatorPlayersList={(() => {
-                if (!teams || teams.length === 0) return [];
-                const aviatorTeamId = getAviatorTeamId();
-                return (participants || [])
-                  .filter(p => p.team === 'aviators')
-                  .map(p => {
-                    const player = players.find(player => player.id === p.playerId);
-                    return {
-                      id: p.playerId,
-                      name: player?.name || `Player ${p.playerId}`,
-                      teamId: aviatorTeamId,
-                      team: 'aviator' as const
-                    };
-                  })
-                  .filter(p => p.name && !p.name.startsWith('Player '));
-              })()}
-              producerPlayersList={(() => {
-                if (!teams || teams.length === 0) return [];
-                const producerTeamId = getProducerTeamId();
-                return (participants || [])
-                  .filter(p => p.team === 'producers')
-                  .map(p => {
-                    const player = players.find(player => player.id === p.playerId);
-                    return {
-                      id: p.playerId,
-                      name: player?.name || `Player ${p.playerId}`,
-                      teamId: producerTeamId,
-                      team: 'producer' as const
-                    };
-                  })
-                  .filter(p => p.name && !p.name.startsWith('Player '));
-              })()}
-              participants={participants || []}
-              allPlayers={(() => {
-                if (!teams || teams.length === 0) return [];
-                return (participants || []).map(p => {
-                  const player = players.find(player => player.id === p.playerId);
-                  const teamId = p.team === 'aviators' ? getAviatorTeamId() : getProducerTeamId();
-                  return {
-                    id: p.playerId,
-                    name: player?.name || `Player ${p.playerId}`,
-                    teamId: teamId,
-                    team: p.team === 'aviators' ? 'aviator' : 'producer'
-                  };
-                }).filter(p => p.name && !p.name.startsWith('Player '));
-              })()}
-              matchData={match}
-              onScoreUpdate={() => {
-                // For Shamble, we don't need to do additional processing
-                // The component handles its own score saving via mutations
-              }}
-            />
-          )}
           {round?.matchType === "4-man scramble" && (
             <FourManTeamScrambleScorecard
-              matchId={id}
-              holes={holes || []}
-              aviatorPlayersList={(() => {
-                if (!teams || teams.length === 0) return [];
-                const aviatorTeamId = getAviatorTeamId();
-                return (participants || [])
-                  .filter(p => p.team === 'aviators')
-                  .map(p => {
-                    const player = players.find(player => player.id === p.playerId);
-                    return {
-                      id: p.playerId,
-                      name: player?.name || `Player ${p.playerId}`,
-                      teamId: aviatorTeamId,
-                      team: 'aviator' as const
-                    };
-                  })
-                  .filter(p => p.name && !p.name.startsWith('Player '));
-              })()}
-              producerPlayersList={(() => {
-                if (!teams || teams.length === 0) return [];
-                const producerTeamId = getProducerTeamId();
-                return (participants || [])
-                  .filter(p => p.team === 'producers')
-                  .map(p => {
-                    const player = players.find(player => player.id === p.playerId);
-                    return {
-                      id: p.playerId,
-                      name: player?.name || `Player ${p.playerId}`,
-                      teamId: producerTeamId,
-                      team: 'producer' as const
-                    };
-                  })
-                  .filter(p => p.name && !p.name.startsWith('Player '));
-              })()}
-              participants={participants || []}
-              allPlayers={(() => {
-                if (!teams || teams.length === 0) return [];
-                return (participants || []).map(p => {
-                  const player = players.find(player => player.id === p.playerId);
-                  const teamId = p.team === 'aviators' ? getAviatorTeamId() : getProducerTeamId();
-                  return {
-                    id: p.playerId,
-                    name: player?.name || `Player ${p.playerId}`,
-                    teamId: teamId,
-                    team: p.team === 'aviators' ? 'aviator' : 'producer'
-                  };
-                }).filter(p => p.name && !p.name.startsWith('Player '));
-              })()}
-              matchData={match}
-              onScoreUpdate={() => {
-                // For 4-man Scramble, we don't need to do additional processing
-                // The component handles its own score saving via mutations
-              }}
+              holes={(holes || []).map(hole => ({
+                hole_number: hole.number,
+                par: hole.par,
+                ...(hole.id !== undefined ? { id: hole.id } : {})
+              }))}
+              scores={(scores || []).map(score => ({
+                holeNumber: score.holeNumber,
+                aviatorScore: score.aviatorScore,
+                producerScore: score.producerScore
+              }))}
+              locked={isLocked}
             />
           )}
         </>
@@ -1053,14 +712,14 @@ const Match = ({ id }: { id: number }) => {
                 <p className="text-lg font-semibold">Final Score:</p>
                 <div className="flex justify-between items-center">
                   <div className="bg-aviator text-white px-4 py-2 rounded">
-                    <p className="font-bold">{teams.find(t => t.id === getAviatorTeamId())?.name || "The Aviators"}</p>
+                    <p className="font-bold">The Aviators</p>
                     <p className="text-2xl text-center">
                       {matchSummary.aviatorTotal}
                     </p>
                   </div>
                   <div className="text-xl font-bold">vs</div>
                   <div className="bg-producer text-white px-4 py-2 rounded">
-                    <p className="font-bold">{teams.find(t => t.id === getProducerTeamId())?.name || "The Producers"}</p>
+                    <p className="font-bold">The Producers</p>
                     <p className="text-2xl text-center">
                       {matchSummary.producerTotal}
                     </p>
@@ -1071,9 +730,9 @@ const Match = ({ id }: { id: number }) => {
                   <p className="text-lg font-semibold">Match Play Result:</p>
                   <p className="text-xl mt-2">
                     {matchSummary.leadingTeam === "aviators"
-                      ? teams.find(t => t.id === getAviatorTeamId())?.name || "The Aviators"
+                      ? "The Aviators"
                       : matchSummary.leadingTeam === "producers"
-                        ? teams.find(t => t.id === getProducerTeamId())?.name || "The Producers"
+                        ? "The Producers"
                         : "Match"}{" "}
                     {matchSummary.matchPlayResult !== "AS" ? "won" : "tied"}{" "}
                     <span className="font-bold">
@@ -1118,7 +777,7 @@ const Match = ({ id }: { id: number }) => {
               <Label>Aviator Players</Label>
               <div className="grid grid-cols-1 gap-2">
                 {players
-                  ?.filter((p: any) => p.teamId === getAviatorTeamId())
+                  ?.filter((p: any) => p.teamId === 1) // Assuming teamId 1 is for Aviators
                   .map((player: any) => (
                     <div key={player.id} className="flex items-center space-x-2">
                       <Checkbox
@@ -1146,7 +805,7 @@ const Match = ({ id }: { id: number }) => {
               <Label>Producer Players</Label>
               <div className="grid grid-cols-1 gap-2">
                 {players
-                  ?.filter((p: any) => p.teamId === getProducerTeamId())
+                  ?.filter((p: any) => p.teamId === 2) // Assuming teamId 2 is for Producers
                   .map((player: any) => (
                     <div key={player.id} className="flex items-center space-x-2">
                       <Checkbox
