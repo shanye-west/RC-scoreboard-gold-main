@@ -1,0 +1,74 @@
+.scoreTableRoot {
+  /* Ensures the card and table can take full width within their container */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.scoreTableCard {
+  /* Ensure the card takes full width if its parent is constrained */
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.titleHeading {
+  /* Custom styles for the heading if needed, though defaults are usually fine */
+  margin-bottom: var(--spacing-medium); /* Ensure space between title and table */
+}
+
+.scoreTable {
+  /* Custom class for the Table component if needed for deeper styling */
+}
+
+.netScoreCellText {
+  /* Base style for text within net score cells */
+  display: flex;
+  align-items: center;
+  justify-content: flex-start; /* Or center, depending on desired alignment */
+}
+
+.strokeAppliedIndicator {
+  /* Style for the asterisk indicating a stroke was applied */
+  color: var(--colors-primary-default);
+  font-weight: var(--typography-font-weight-bold);
+  margin-left: var(--spacing-xsmall); /* Space out the asterisk */
+  font-size: var(--typography-sizes-body-small); /* Asterisk can be smaller */
+}
+
+/* Cell content alignment - apply via column definition cellStyle if needed */
+.centerAlignCell {
+  text-align: center;
+}
+
+.rightAlignCell {
+  text-align: right;
+}
+
+/* Ensure sticky header z-index is above row hover effects if they conflict.
+   The Table component's default z-index for sticky elements is 1.
+   If row hover effects create z-index issues, this might need adjustment.
+   Typically, inherit background for sticky cells works well with row styling.
+*/
+.stickyHeaderCell {
+  position: sticky;
+  left: 0;
+  background-color: var(--colors-surface-secondary); /* Match table head background */
+  z-index: 2; /* Above table content, potentially above row hover if needed */
+}
+
+.stickyDataCell {
+  position: sticky;
+  left: 0;
+  background-color: inherit; /* Allows row striping/hover to show through */
+  z-index: 1; /* Standard z-index for sticky content */
+}
+
+/* Specific styling for different column types for visual distinction if desired */
+.holeInfoColumnHeader { /* For Hole, Par, SI headers */
+  /* Example: font-weight: var(--typography-font-weight-medium); */
+}
+.playerScoreColumnHeader { /* For Player Gross/Net headers */
+  /* Example: color: var(--colors-primary-default); */
+}
+.teamScoreColumnHeader { /* For Team Best Ball headers */
+  /* Example: background-color: var(--colors-primary-active); color: var(--colors-text-inverse) !important; */
+}

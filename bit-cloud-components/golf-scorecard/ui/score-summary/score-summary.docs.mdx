@@ -1,0 +1,72 @@
+---
+description: A UI component to summarize the outcome of a 2-man team best ball match.
+labels: ['score', 'summary', 'golf', 'best ball', 'match play', 'ui']
+---
+
+The `ScoreSummary` component provides a clear and concise overview of a 2-man team best ball match, highlighting the scores for each team and explicitly stating the match's conclusion. It is designed to be highly readable and visually appealing, using various design system components.
+
+### Basic Match Summary: Team Alpha Wins
+
+This example shows a typical match summary where one team clearly wins, displaying their final score and the overall match conclusion.
+
+```tsx
+<ScoreSummary
+  teamA={{
+    name: 'The Eagles',
+    players: ['Jordan Spieth', 'Justin Thomas'],
+    score: '4 & 3',
+    isWinner: true,
+  }}
+  teamB={{
+    name: 'The Prowlers',
+    players: ['Rory McIlroy', 'Scottie Scheffler'],
+    score: 'Lost',
+    isWinner: false,
+  }}
+  matchConclusion="The Eagles Soar to Victory: 4 & 3"
+  title="Tournament Finals: Match Summary"
+/>
+```
+### Halved Match Summary: An All Square Result
+This example illustrates how the `ScoreSummary` component handles a halved match, where neither team is declared a winner, and the scores are 'All Square' (AS).
+```tsx
+<ScoreSummary
+  teamA={{
+    name: 'Team Aces',
+    players: ['Tiger Woods', 'Phil Mickelson'],
+    score: 'AS',
+    isWinner: false,
+  }}
+  teamB={{
+    name: 'Team Birdies',
+    players: ['Dustin Johnson', 'Brooks Koepka'],
+    score: 'AS',
+    isWinner: false,
+  }}
+  matchConclusion="An Epic Battle Ends All Square!"
+  title="Grudge Match: Final Result"
+/>
+```
+### Match Summary with Custom Styling
+This example demonstrates applying custom inline styles to the `ScoreSummary` component, useful for integrating it into various visual contexts or emphasizing specific results.
+```tsx
+<ScoreSummary
+  teamA={{
+    name: 'The Ironclad',
+    players: ['Patrick Cantlay', 'Xander Schauffele'],
+    score: 'Lost',
+    isWinner: false,
+  }}
+  teamB={{
+    name: 'The Finishers',
+    players: ['Jon Rahm', 'Collin Morikawa'],
+    score: '1 UP',
+    isWinner: true,
+  }}
+  matchConclusion="The Finishers Clinch it on the 18th: 1 UP"
+  title="Championship Semi-Final"
+  style={{
+    boxShadow: 'var(--effects-shadows-x-large)',
+    border: '2px solid var(--colors-primary-default)',
+  }}
+/>

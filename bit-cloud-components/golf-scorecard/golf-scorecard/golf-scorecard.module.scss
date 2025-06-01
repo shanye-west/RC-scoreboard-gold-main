@@ -1,0 +1,115 @@
+.golfScorecardApp {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background-color: var(--colors-surface-background);
+  color: var(--colors-text-default);
+  padding: var(--spacing-medium);
+  gap: var(--spacing-large);
+  font-family: var(--typography-font-family);
+  box-sizing: border-box;
+}
+
+.appHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--spacing-small) var(--spacing-medium);
+  background-color: var(--colors-surface-primary);
+  border-radius: var(--borders-radius-medium);
+  box-shadow: var(--effects-shadows-small);
+  margin-bottom: var(--spacing-medium);
+}
+
+.appTitle {
+  font-size: var(--typography-sizes-heading-h4);
+  font-weight: var(--typography-font-weight-bold);
+  color: var(--colors-primary-default);
+}
+
+.contentWrapper {
+  display: flex;
+  flex-direction: column;
+  gap: var(--spacing-xlarge);
+  width: 100%;
+  max-width: var(--layout-max-page-width, 1200px);
+  margin: 0 auto;
+}
+
+.section {
+  background-color: var(--colors-surface-primary);
+  padding: var(--spacing-medium);
+  border-radius: var(--borders-radius-large);
+  box-shadow: var(--effects-shadows-medium);
+}
+
+.sectionTitle {
+  font-size: var(--typography-sizes-heading-h5);
+  color: var(--colors-text-default);
+  margin-bottom: var(--spacing-medium);
+  padding-bottom: var(--spacing-small);
+  border-bottom: 1px solid var(--borders-default-color);
+}
+
+.setupInstructions {
+  text-align: center;
+  color: var(--colors-text-secondary);
+  padding: var(--spacing-large);
+  font-size: var(--typography-sizes-body-large);
+  border: 1px dashed var(--borders-default-color);
+  border-radius: var(--borders-radius-medium);
+  background-color: var(--colors-surface-secondary);
+}
+
+/* Responsive adjustments */
+@media (max-width: var(--tablet)) { /* tablet typically 768px or 480px depending on theme */
+  .golfScorecardApp {
+    padding: var(--spacing-small);
+    gap: var(--spacing-medium);
+  }
+
+  .appHeader {
+    flex-direction: column;
+    gap: var(--spacing-small);
+    padding: var(--spacing-small);
+  }
+
+  .appTitle {
+    font-size: var(--typography-sizes-heading-h5);
+  }
+
+  .section {
+    padding: var(--spacing-small);
+  }
+  
+  .sectionTitle {
+    font-size: var(--typography-sizes-heading-h6);
+  }
+}
+
+@media (min-width: var(--laptop)) { /* laptop typically 1024px */
+  .contentWrapper {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: flex-start; /* Align items to the top */
+  }
+
+  .playerSetupSection {
+    width: 100%; /* Full width for player setup */
+    max-width: 700px; /* Max width for player input */
+    margin: 0 auto; /* Center if it's the only one initially */
+  }
+  
+  .scoreEntrySection,
+  .scoreDisplaySection,
+  .summarySection {
+    flex: 1 1 45%; /* Allow two items per row on wider screens, adjust basis */
+    min-width: 300px; /* Minimum width before wrapping */
+  }
+
+   .scoreDisplaySection {
+    flex-basis: 100%; /* Score table can take full width if needed */
+    max-width: none;
+  }
+}

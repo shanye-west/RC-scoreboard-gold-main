@@ -1,0 +1,111 @@
+.holeScoreInput {
+  background-color: var(--colors-surface-primary);
+  padding: var(--spacing-large);
+  border-radius: var(--borders-radius-large);
+  box-shadow: var(--effects-shadows-medium);
+  max-width: 480px; /* Optimal width for score entry, good for mobile and desktop */
+  margin: var(--spacing-medium) auto; /* Centering the card on the page */
+  box-sizing: border-box;
+}
+
+/* Card's internal title is used, no separate .holeTitle needed unless overriding Card's title style */
+/* If Card's title prop doesn't use Heading or we want custom styling for it here:
+.holeTitle {
+  text-align: center;
+  color: var(--colors-text-default);
+  margin-bottom: var(--spacing-large);
+  font-size: var(--typography-sizes-heading-h3);
+  font-weight: var(--typography-font-weight-semi-bold);
+}
+*/
+
+.contentWrapper {
+  width: 100%;
+}
+
+.scoresContainer {
+  width: 100%;
+  margin-bottom: var(--spacing-medium); /* Space before navigation buttons */
+}
+
+.playerScoreRow {
+  padding: var(--spacing-small) 0;
+  border-bottom: 1px solid var(--borders-default-color);
+  box-sizing: border-box;
+}
+
+.playerScoreRow:last-child {
+  border-bottom: none;
+}
+
+.playerName {
+  color: var(--colors-text-default); /* Changed from secondary for better readability */
+  font-size: var(--typography-sizes-body-default);
+  flex-grow: 1;
+  margin-right: var(--spacing-medium); /* Space between name and input */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scoreInputControl {
+  /* The NumberInput component has its own internal styling for border, padding etc. */
+  /* This class is on the wrapper of NumberInput. */
+  /* We can constrain its width if needed. */
+  min-width: 70px; /* Ensure enough space for 2 digits and a bit of padding */
+  max-width: 90px;
+  flex-shrink: 0; /* Prevent input from shrinking too much */
+}
+
+.navigationButtons {
+  margin-top: var(--spacing-medium); /* Default spacing, can be adjusted if scoresContainer margin is enough */
+  width: 100%;
+}
+
+/* Responsive adjustments */
+@media (max-width: var(--tablet)) { /* var(--tablet) is 480px as per theme spec */
+  .holeScoreInput {
+    padding: var(--spacing-medium);
+    margin: var(--spacing-small) auto;
+    max-width: 100%; /* Allow full width on small screens */
+  }
+
+  /*
+  .holeTitle {
+    font-size: var(--typography-sizes-heading-h4); 
+    margin-bottom: var(--spacing-medium);
+  }
+  */
+
+  .playerName {
+    font-size: var(--typography-sizes-body-small);
+  }
+
+  .scoreInputControl {
+    min-width: 60px;
+    max-width: 80px;
+  }
+
+  .navigationButtons {
+    flex-direction: row; /* Keep as row, but buttons might stack if not enough space */
+    /* If buttons need to stack on very small screens:
+    flex-direction: column;
+    gap: var(--spacing-small);
+
+    & > button {
+      width: 100%;
+    }
+    */
+  }
+}
+
+@media (max-width: 360px) { /* Very small mobile screens */
+   .playerName {
+    font-size: var(--typography-sizes-caption-medium); /* Further reduce font size if needed */
+    margin-right: var(--spacing-small);
+  }
+  .scoreInputControl {
+    min-width: 50px;
+    max-width: 70px;
+  }
+}

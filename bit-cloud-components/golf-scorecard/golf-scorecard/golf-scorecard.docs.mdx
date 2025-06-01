@@ -1,0 +1,47 @@
+---
+description: 'A React application for a 2-man Team Best Ball Scorecard.'
+labels: ['app', 'react', 'golf', 'scorecard']
+---
+
+A React application to manage and display scores for a 2-man team best ball golf match. It integrates player input, hole-by-hole score entry, a detailed score table, and a match summary, all powered by dedicated UI components and scoring logic.
+
+## Features
+
+-   **Player Setup**: Input names and course handicaps for four players, automatically assigned to two teams.
+-   **Dynamic Score Entry**: Enter gross scores for each player on the current hole, with easy navigation between holes.
+-   **Real-time Calculations**: Leverages `useScorecardLogic` to calculate net scores, team best ball scores, and match status based on USGA handicap principles (strokes off the lowest handicap player).
+-   **Detailed Score Table**: View a comprehensive table showing gross scores, net scores (with stroke indicators), and team best ball scores for each hole.
+-   **Match Summary**: See the current match status (e.g., "Team A 2 Up", "All Square") and the final result upon match completion.
+-   **Themeable UI**: Utilizes `ShanyewestTheme` for a premium look and feel, with a `ThemeToggler` to switch between light and dark modes.
+-   **Responsive Design**: Adapts to various screen sizes for a seamless experience on desktop and mobile devices.
+
+## Running the Application
+
+To run the app locally:
+
+1.  Ensure you have Bit installed and your workspace configured.
+2.  Import the component (if not already part of your workspace):
+    ```bash
+    bit import shanyewest.golf-scorecard/golf-scorecard --path apps/golf-scorecard
+    ```
+3.  Run the app:
+    ```bash
+    bit run golf-scorecard
+    ```
+This will typically start the application on a local development server, and you can access it via your browser.
+### Starting a New Match
+This example shows the initial state of the scorecard application. Users are prompted to enter player names and handicaps to begin a match.
+```tsx
+<GolfScorecard />
+```
+Upon loading, the application displays a player input form. All four player slots (two per team) must be filled with names and valid course handicaps. Until four valid players are entered, the scoring sections remain hidden, and an instruction message guides the user to complete the setup.
+### Mid-Match Scoring
+Once all players are entered and the game is set up, the scorecard transitions to the active scoring view.
+```tsx
+<GolfScorecard />
+```
+In this state, the UI expands to include:
+- A "Hole Score Entry" section, allowing users to input gross scores for each player on the current hole and navigate between holes.
+- A "Match Summary" panel, providing real-time updates on the match status (e.g., who is winning, tied, etc.).
+- A "Full Scorecard" table, offering a detailed overview of all players' scores, calculated net scores, and team best balls for each hole played so far.
+The `ThemeToggler` remains available in the header for switching between light and dark modes.

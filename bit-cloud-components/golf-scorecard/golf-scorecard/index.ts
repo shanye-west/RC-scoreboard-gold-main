@@ -1,0 +1,1 @@
+export { GolfScorecard } from "./golf-scorecard.js";

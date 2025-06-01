@@ -1,0 +1,66 @@
+---
+description: A UI component for entering individual player scores for each golf hole.
+labels: ['golf', 'scorecard', 'input', 'ui']
+---
+
+### Basic Two-Player Score Entry
+
+This example demonstrates the `HoleScoreInput` component configured for a two-player game, showing how scores are entered and managed for a mid-round hole.
+
+```tsx
+<HoleScoreInput
+  holeNumber={9}
+  players={[
+    { id: 'p1', name: 'Shanye West' },
+    { id: 'p2', name: 'Taylor Made' },
+  ]}
+  scores={{
+    'p1': 4,
+    'p2': NaN,
+  }}
+  onScoreChange={(playerId, score) => console.log(`${playerId} score changed to ${score}`)}
+  onPreviousHole={() => console.log('Previous hole clicked')}
+  onNextHole={() => console.log('Next hole clicked')}
+/>
+```
+### Four-Player Initial Score Entry
+Illustrates the component's use at the start of a round with four players, where all scores are initially empty.
+```tsx
+<HoleScoreInput
+  holeNumber={1}
+  players={[
+    { id: 'pA1', name: 'Jordan Spieth' },
+    { id: 'pA2', name: 'Justin Thomas' },
+    { id: 'pB1', name: 'Rory McIlroy' },
+    { id: 'pB2', name: 'Scottie Scheffler' },
+  ]}
+  scores={{
+    'pA1': NaN,
+    'pA2': NaN,
+    'pB1': NaN,
+    'pB2': NaN,
+  }}
+  onScoreChange={(playerId, score) => console.log(`${playerId} score changed to ${score}`)}
+  onPreviousHole={() => console.log('Previous hole clicked')}
+  onNextHole={() => console.log('Next hole clicked')}
+/>
+```
+### Finalizing Scores on the Last Hole
+Shows the component being used on the 18th hole with existing scores, demonstrating the disabled 'Next' button as the round concludes.
+```tsx
+<HoleScoreInput
+  holeNumber={18}
+  players={[
+    { id: 'p1', name: 'Shanye West' },
+    { id: 'p2', name: 'Taylor Made' },
+  ]}
+  scores={{
+    'p1': 3,
+    'p2': 4,
+  }}
+  onScoreChange={(playerId, score) => console.log(`${playerId} score changed to ${score}`)}
+  onPreviousHole={() => console.log('Previous hole clicked')}
+  onNextHole={() => console.log('Next hole clicked')}
+  minScore={1}
+  maxScore={10}
+/>

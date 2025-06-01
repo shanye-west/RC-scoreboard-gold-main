@@ -1,0 +1,111 @@
+.playerInputContainer {
+  width: 100%;
+  max-width: 700px; /* Max width for better readability on large screens */
+  margin: 0 auto; /* Center the component */
+  padding: var(--spacing-medium);
+  box-sizing: border-box;
+}
+
+.mainTitle {
+  color: var(--colors-text-default);
+  text-align: center;
+  margin-bottom: var(--spacing-medium); /* Add some space below title */
+}
+
+.playersList {
+  width: 100%;
+}
+
+.playerCard {
+  padding: var(--spacing-medium);
+  background-color: var(--colors-surface-primary); /* Slightly different background for cards */
+  box-shadow: var(--effects-shadows-small);
+  border: 1px solid var(--borders-default-color);
+}
+
+.playerRow {
+  width: 100%;
+  align-items: flex-end; /* Align items to bottom for varied heights of labels */
+}
+
+.inputGroup {
+  flex-grow: 1;
+  min-width: 200px; /* Ensure inputs don't get too squished */
+}
+
+.inputLabel {
+  font-size: var(--typography-sizes-body-small);
+  color: var(--colors-text-secondary);
+  font-weight: var(--typography-font-weight-medium);
+  display: block;
+  margin-bottom: var(--spacing-xsmall);
+}
+
+.nameInput {
+  width: 100%;
+  padding: var(--spacing-small);
+  font-family: var(--typography-font-family);
+  font-size: var(--typography-sizes-body-default);
+  color: var(--colors-text-primary);
+  background-color: var(--colors-surface-secondary); /* Match NumberInput surface */
+  border: var(--borders-default-width) var(--borders-default-style) var(--borders-default-color);
+  border-radius: var(--borders-radius-medium);
+  box-sizing: border-box;
+  transition: border-color var(--interactions-transitions-duration-fast) var(--interactions-transitions-easing-ease-in-out),
+              box-shadow var(--interactions-transitions-duration-fast) var(--interactions-transitions-easing-ease-in-out);
+
+  &:focus {
+    outline: none;
+    border-color: var(--borders-focus-color);
+    box-shadow: 0 0 0 var(--borders-focus-offset) var(--borders-focus-color);
+  }
+
+  &::placeholder {
+    color: var(--colors-text-secondary);
+    opacity: 0.7;
+  }
+}
+
+.handicapInput {
+  /* NumberInput component styling is mostly self-contained */
+  /* We can adjust width if needed, but flex-grow on parent helps */
+  width: 100%;
+  box-sizing: border-box; /* Ensure NumberInput (if it has padding/border) doesn't overflow */
+}
+
+.removeButton {
+  /* Aligns button with inputs if labels cause height difference */
+  /* padding-top and padding-bottom can be adjusted if text size of button differs from input height */
+  height: fit-content; /* Or match input height */
+  align-self: flex-end; /* Align with the bottom of the input fields */
+  margin-left: auto; /* Pushes to the right if space allows in flex row */
+  flex-shrink: 0; /* Prevent button from shrinking */
+}
+
+.addButton {
+  margin-top: var(--spacing-medium);
+  align-self: center; /* Center the add button */
+}
+
+/* Responsive adjustments */
+@media (max-width: var(--tablet, 768px)) {
+  .playerInputContainer {
+    padding: var(--spacing-small);
+  }
+
+  .playerRow {
+    flex-direction: column;
+    align-items: stretch; /* Make items take full width in column */
+    gap: var(--spacing-medium);
+  }
+
+  .inputGroup {
+    min-width: 100%; /* Full width for input groups on mobile */
+  }
+
+  .removeButton {
+    margin-left: 0; /* Reset margin for column layout */
+    align-self: flex-end; /* Keep remove button to the right in its new line */
+    margin-top: var(--spacing-small);
+  }
+}

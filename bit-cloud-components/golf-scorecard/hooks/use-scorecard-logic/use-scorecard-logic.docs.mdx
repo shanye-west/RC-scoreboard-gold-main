@@ -1,0 +1,197 @@
+---
+description: A React Hook for managing the state and calculations for a 2-man Team Best Ball Scorecard (2v2 match play net play).
+labels: ['react-hook', 'scorecard', 'golf', 'match-play']
+---
+
+A React Hook for managing the state and calculations for a 2-man Team Best Ball Scorecard (2v2 match play net play). This hook handles player data (names, course handicaps), hole-by-hole scores, and implements the specific scoring logic: strokes are given off the player with the lowest course handicap (meaning the lowest gets zero strokes, everybody else gets whatever their handicap is above the lowest). These calculated strokes will be applied to the hardest holes based on their handicaps. It exposes methods for updating scores, managing players, resetting the scorecard, and retrieving calculated best ball scores and net scores for each hole and overall totals for each team.
+
+### Basic Scorecard Setup
+
+This example demonstrates how to initialize the `useScorecardLogic` hook with player data and retrieve initial setup information. It shows how to add players and observe the setup status.
+
+```tsx
+const ScorecardSetup = () => {
+  const initialPlayers = [
+    { id: 'p1', name: 'Player A1', courseHandicap: 10, teamId: 'A' },
+    { id: 'p2', name: 'Player A2', courseHandicap: 15, teamId: 'A' },
+    { id: 'p3', name: 'Player B1', courseHandicap: 8, teamId: 'B' },
+    { id: 'p4', name: 'Player B2', courseHandicap: 12, teamId: 'B' },
+  ];
+  const initialHoleData = [
+    { holeNumber: 1, handicapRating: 1 },
+    { holeNumber: 2, handicapRating: 3 },
+    { holeNumber: 3, handicapRating: 2 },
+    { holeNumber: 4, handicapRating: 4 },
+    { holeNumber: 5, handicapRating: 5 },
+    { holeNumber: 6, handicapRating: 6 },
+    { holeNumber: 7, handicapRating: 7 },
+    { holeNumber: 8, handicapRating: 8 },
+    { holeNumber: 9, handicapRating: 9 },
+    { holeNumber: 10, handicapRating: 10 },
+    { holeNumber: 11, handicapRating: 11 },
+    { holeNumber: 12, handicapRating: 12 },
+    { holeNumber: 13, handicapRating: 13 },
+    { holeNumber: 14, handicapRating: 14 },
+    { holeNumber: 15, handicapRating: 15 },
+    { holeNumber: 16, handicapRating: 16 },
+    { holeNumber: 17, handicapRating: 17 },
+    { holeNumber: 18, handicapRating: 18 },
+  ];
+  const {
+    isSetupComplete,
+    players,
+    holeData,
+    lowestCourseHandicapPlayerValue,
+    setPlayers,
+    setHoleData,
+    configuredPlayers,
+  } = useScorecardLogic({
+    initialPlayers: initialPlayers,
+    initialHoleData: initialHoleData,
+  });
+  return (
+    <div>
+      <h3>Scorecard Configuration</h3>
+      <p>Setup Complete: {isSetupComplete ? 'Yes' : 'No'}</p>
+      {isSetupComplete && (
+        <>
+          <p>Lowest Course Handicap: {lowestCourseHandicapPlayerValue}</p>
+          <h4>Players and Strokes Received:</h4>
+          <ul>
+            {configuredPlayers.map((p) => (
+              <li key={p.id}>
+                {p.name} (Team {p.teamId}, CH: {p.courseHandicap}) - Strokes Received: {p.strokesReceived}
+              </li>
+            ))}
+          </ul>
+        </>
+      )}
+    </div>
+  );
+};
+```
+### Updating Scores and Viewing Live Results
+This example demonstrates how to update player scores for specific holes and observe the calculated best ball net scores and match status in real-time.
+```tsx
+const ScorecardUpdater = () => {
+  const initialPlayers = [
+    { id: 'p1', name: 'Player A1', courseHandicap: 10, teamId: 'A' },
+    { id: 'p2', name: 'Player A2', courseHandicap: 15, teamId: 'A' },
+    { id: 'p3', name: 'Player B1', courseHandicap: 8, teamId: 'B' },
+    { id: 'p4', name: 'Player B2', courseHandicap: 12, teamId: 'B' },
+  ];
+  const initialHoleData = [
+    { holeNumber: 1, handicapRating: 1 }, // Hardest hole
+    { holeNumber: 2, handicapRating: 3 },
+    { holeNumber: 3, handicapRating: 2 },
+  ];
+  const {
+    updateScore,
+    detailedHoleResults,
+    matchStatus,
+    isSetupComplete,
+  } = useScorecardLogic({
+    initialPlayers: initialPlayers,
+    initialHoleData: initialHoleData,
+  });
+  const handleEnterScores = () => {
+    // Scores for Hole 1
+    updateScore('p1', 1, 5); // Player A1: gross 5, net 4 (receives stroke)
+    updateScore('p2', 1, 6); // Player A2: gross 6, net 5 (receives stroke)
+    // Team A Best Ball Net for Hole 1: 4
+    updateScore('p3', 1, 4); // Player B1: gross 4, net 4 (no stroke)
+    updateScore('p4', 1, 7); // Player B2: gross 7, net 6 (receives stroke)
+    // Team B Best Ball Net for Hole 1: 4
+    // Hole 1: Tie (4 vs 4)
+    // Scores for Hole 2
+    updateScore('p1', 2, 5); // Player A1: gross 5, net 5 (no stroke on HR 3)
+    updateScore('p2', 2, 7); // Player A2: gross 7, net 6 (receives stroke on HR 3)
+    // Team A Best Ball Net for Hole 2: 5
+    updateScore('p3', 2, 6); // Player B1: gross 6, net 6 (no stroke)
+    updateScore('p4', 2, 6); // Player B2: gross 6, net 5 (receives stroke on HR 3)
+    // Team B Best Ball Net for Hole 2: 5
+    // Hole 2: Tie (5 vs 5)
+  };
+  return (
+    <div>
+      <h3>Scorecard Entry and Real-time Results</h3>
+      {!isSetupComplete && <p>Please complete setup first.</p>}
+      {isSetupComplete && (
+        <>
+          <button onClick={handleEnterScores}>Enter Sample Scores for Hole 1 & 2</button>
+          <h4>Match Status:</h4>
+          <p>Status: {matchStatus.status}</p>
+          <p>Holes Played: {matchStatus.holesPlayed}</p>
+          <p>Team A Wins: {matchStatus.teamAWins}</p>
+          <p>Team B Wins: {matchStatus.teamBWins}</p>
+          <p>Ties: {matchStatus.ties}</p>
+          <h4>Detailed Hole Results:</h4>
+          {detailedHoleResults
+            .filter(hr => hr.holeNumber <= matchStatus.holesPlayed)
+            .map((hr) => (
+              <div key={hr.holeNumber}>
+                <h5>Hole {hr.holeNumber} (HR: {hr.holeInfo.handicapRating})</h5>
+                <p>Team A Best Ball Net: {hr.teamAResult.bestBallNetScore ?? 'N/A'}</p>
+                <p>Team B Best Ball Net: {hr.teamBResult.bestBallNetScore ?? 'N/A'}</p>
+                <p>Winner: {hr.winningTeam ?? 'Incomplete'}</p>
+              </div>
+            ))}
+        </>
+      )}
+    </div>
+  );
+};
+```
+### Resetting and Clearing Scorecard Data
+This example demonstrates how to clear all recorded scores or completely reset the scorecard to its initial state using the `clearScores` and `resetScorecard` methods.
+```tsx
+const ScorecardReset = () => {
+  const initialPlayers = [
+    { id: 'p1', name: 'Player A1', courseHandicap: 10, teamId: 'A' },
+    { id: 'p2', name: 'Player A2', courseHandicap: 15, teamId: 'A' },
+    { id: 'p3', name: 'Player B1', courseHandicap: 8, teamId: 'B' },
+    { id: 'p4', name: 'Player B2', courseHandicap: 12, teamId: 'B' },
+  ];
+  const initialHoleData = [
+    { holeNumber: 1, handicapRating: 1 },
+    { holeNumber: 2, handicapRating: 3 },
+  ];
+  const {
+    updateScore,
+    clearScores,
+    resetScorecard,
+    grossScores,
+    isSetupComplete,
+    players,
+    holeData,
+    matchStatus,
+  } = useScorecardLogic({
+    initialPlayers: initialPlayers,
+    initialHoleData: initialHoleData,
+    initialGrossScores: { // Pre-fill some scores for demonstration
+      'p1': { 1: 5 },
+      'p2': { 1: 6 },
+      'p3': { 1: 4 },
+      'p4': { 1: 7 },
+    }
+  });
+  const hasScores = Object.keys(grossScores).length > 0 &&
+                     Object.values(grossScores).some(holeScores => Object.keys(holeScores).length > 0);
+  return (
+    <div>
+      <h3>Scorecard Management</h3>
+      {!isSetupComplete && <p>Please complete setup first.</p>}
+      {isSetupComplete && (
+        <>
+          <p>Current Gross Scores Recorded: {hasScores ? 'Yes' : 'No'}</p>
+          <p>Number of Players: {players.length}</p>
+          <p>Number of Holes Configured: {holeData.length}</p>
+          <p>Match Status: {matchStatus.status}</p>
+          <button onClick={clearScores} style={{ marginRight: '10px' }}>Clear All Scores</button>
+          <button onClick={resetScorecard}>Reset Entire Scorecard</button>
+          <p><em>(After clicking, observe the status message and score count change)</em></p>
+        </>
+      )}
+    </div>
+  );
+};

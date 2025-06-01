@@ -1,0 +1,40 @@
+---
+description: A UI component for collecting golf player names and course handicaps for a scorecard.
+labels: ['form', 'input', 'golf', 'players', 'ui']
+---
+
+## Component usage
+
+The `PlayerInput` component allows users to enter names and handicaps for players, typically for a golf scorecard. It supports adding and removing players within a configurable range.
+
+## Basic Player Input
+
+This example demonstrates the basic usage of the `PlayerInput` component. By default, it renders input fields for 2 players and allows adding up to a maximum of 4 players.
+
+```tsx
+<PlayerInput />
+```
+## Player Input with Initial Data
+You can pre-populate the `PlayerInput` component with existing player data using the `initialPlayers` prop. This is useful when loading a saved game or pre-filling known participants.
+```tsx
+<PlayerInput
+  initialPlayers={[
+    { id: 'p1', name: 'Alice Wonderland', handicap: 10 },
+    { id: 'p2', name: 'Bob The Builder', handicap: 18 },
+    { id: 'p3', name: 'Charlie Brown', handicap: 22 },
+  ]}
+/>
+```
+## Configured Player Input
+This example shows how to configure the minimum and maximum number of players allowed. Here, the component is set up to strictly handle 4 players, disabling add/remove functionality once the limit is reached.
+```tsx
+<PlayerInput
+  initialPlayers={[
+    { id: 'plyr1', name: 'Golfer One', handicap: 5 },
+    { id: 'plyr2', name: 'Player Two', handicap: 12 },
+    { id: 'plyr3', name: 'Participant Three', handicap: 20 },
+    { id: 'plyr4', name: 'User Four', handicap: 8 },
+  ]}
+  minPlayers={4}
+  maxPlayers={4}
+/>

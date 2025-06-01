@@ -1,0 +1,107 @@
+.scoreSummaryCard {
+  /* The Card component provides base styling including padding for its content area */
+  /* We can add specific width constraints if needed, but generally it should be flexible */
+  width: 100%;
+  max-width: 800px; /* Example max-width for readability, adjust as needed */
+  margin: 0 auto; /* Center the card if a max-width is set */
+  box-sizing: border-box;
+}
+
+.contentWrapper {
+  /* Wrapper for all content within the card's content area */
+  padding: var(--spacing-small) 0; /* Add some vertical padding if Card's internal padding is not enough */
+}
+
+.matchConclusion {
+  text-align: center;
+  color: var(--colors-primary-default);
+  font-weight: var(--typography-font-weight-bold);
+  /* Heading component manages its own font size and margins */
+  /* Ensure it's prominent */
+  font-size: var(--typography-sizes-heading-h2); /* Explicitly set for prominence */
+  margin-bottom: var(--spacing-medium); /* Add some space below overall conclusion */
+}
+
+.teamsContainer {
+  /* Flex container for the two team sections */
+  /* Handled by Flex component props: direction, justifyContent, alignItems, gap, wrap */
+}
+
+.teamSection {
+  background-color: var(--colors-surface-secondary);
+  padding: var(--spacing-medium);
+  border-radius: var(--borders-radius-medium);
+  border: var(--borders-default-width) solid var(--colors-surface-secondary); /* Default border same as background */
+  flex: 1 1 280px; /* Flex grow, shrink, and basis. Basis helps with wrapping. */
+  box-shadow: var(--effects-shadows-small);
+  transition: border-color var(--interactions-transitions-duration-fast) ease-in-out,
+              background-color var(--interactions-transitions-duration-fast) ease-in-out;
+  box-sizing: border-box;
+  /* display: flex, flex-direction: column, gap are handled by Flex component props */
+}
+
+.teamSection.winner {
+  border-color: var(--colors-status-positive-default);
+  background-color: var(--colors-status-positive-subtle);
+
+  .teamName {
+     color: var(--colors-status-positive-default); /* Make winner team name stand out */
+  }
+  .scoreValue {
+    color: var(--colors-status-positive-default); /* Emphasize winning score text */
+  }
+}
+
+.teamName {
+  /* Uses Heading component. Default Heading margins might be too large in this context. */
+  /* Relying on Flex gap for spacing, so reduce Heading's specific margins. */
+  margin-block-start: 0 !important;
+  margin-block-end: var(--spacing-xsmall) !important; /* Tighter spacing below name */
+  text-align: center;
+}
+
+.teamPlayers {
+  color: var(--colors-text-secondary);
+  font-size: var(--typography-sizes-body-small);
+  text-align: center;
+  min-height: calc(var(--typography-sizes-body-small) * var(--typography-line-height-base) * 2); /* Reserve space for two lines of player names */
+}
+
+.teamScoreLabelValue {
+  /* Container for LabelValue if specific styling is needed */
+  margin-top: var(--spacing-small); /* Add some space above the score */
+}
+
+.scoreLabel {
+  font-weight: var(--typography-font-weight-medium);
+  color: var(--colors-text-secondary);
+  font-size: var(--typography-sizes-body-default);
+}
+
+.scoreValue {
+  font-weight: var(--typography-font-weight-bold);
+  color: var(--colors-text-default);
+  font-size: var(--typography-sizes-heading-h5); /* Make score prominent */
+}
+
+/* Responsive adjustments */
+@media (max-width: 600px) { /* Breakpoint for stacking team sections */
+  .teamsContainer {
+    flex-direction: column;
+    align-items: stretch; /* Make team sections take full width when stacked */
+  }
+
+  .teamSection {
+    flex-basis: auto; /* Reset flex-basis when stacked */
+    width: 100%; /* Ensure full width */
+    margin-bottom: var(--spacing-medium); /* Add margin between stacked cards */
+  }
+
+  .teamSection:last-child {
+    margin-bottom: 0;
+  }
+
+  .matchConclusion {
+    font-size: var(--typography-sizes-heading-h3); /* Slightly smaller for mobile */
+  }
+}
