@@ -1,35 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useState, useEffect } from "react";
-import { useLocation } f  // Debug logging
-  console.log('DEBUG Match component:', {
-    matchId: id,
-    participantsQueryKey: `/api/match-players?matchId=${id}`,
-    participants,
-    participantsLength: participants?.length,
-    players,
-    playersLength: players?.length,
-    isParticipantsLoading,
-    isPlayersLoading
-  });
-
-  // Debug transformation
-  if (participants && participants.length > 0 && players && players.length > 0) {
-    const transformedData = (participants || []).map(p => {
-      const player = players.find(player => player.id === p.playerId);
-      const result = {
-        id: p.playerId,
-        name: player?.name || `Player ${p.playerId}`,
-        team: p.team === 'aviators' ? 'aviator' : 'producer',
-        handicapStrokes: Array(18).fill(0),
-        foundPlayer: !!player
-      };
-      console.log('DEBUG participant transformation:', { participant: p, foundPlayer: !!player, result });
-      return result;
-    });
-    console.log('DEBUG transformed data before filter:', transformedData);
-    const filteredData = transformedData.filter(p => p.name !== `Player ${p.id}`);
-    console.log('DEBUG transformed data after filter:', filteredData);
-  }import { Skeleton } from "@/components/ui/skeleton";
+// import { useLocation } from "react-router-dom"; // Not needed, removing to fix missing dependency
+import { Skeleton } from "@/components/ui/skeleton";
 import MatchHeader from "@/components/MatchHeader";
 import TwoManTeamBestBallScorecard, { transformRawPlayerData } from "@/components/TwoManTeamBestBallScorecard";
 import TwoManTeamGrossScorecard from "@/components/TwoManTeamGrossScorecard";
@@ -643,22 +615,18 @@ const Match = ({ id }: { id: number }) => {
               holes={(holes || []).map(hole => ({
                 hole_number: hole.number,
                 par: hole.par,
+                handicap: (hole as any).handicapRank || 1, // Map handicapRank to handicap
                 ...(hole.id !== undefined ? { id: hole.id } : {})
               }))}
-              playerScores={transformRawPlayerData(
-                (participants || []).map(p => {
-                  const player = players.find(player => player.id === p.playerId);
-                  return {
-                    id: p.playerId,
-                    name: player?.name || `Player ${p.playerId}`,
-                    team: p.team === 'aviators' ? 'aviator' : 'producer',
-                    handicapStrokes: Array(18).fill(0) // Default handicap strokes
-                  };
-                }).filter(p => p.name !== `Player ${p.id}`), // Only include players with real names
-                (holes || []).map(hole => ({
-                  hole_number: hole.number
-                }))
-              )}
+              players={(participants || []).map(p => {
+                const player = players.find(player => player.id === p.playerId);
+                return {
+                  id: p.playerId,
+                  name: player?.name || `Player ${p.playerId}`,
+                  team: (p.team === 'aviators' ? 'aviator' : 'producer') as 'aviator' | 'producer',
+                  courseHandicap: 0 // This will be calculated by the hook based on handicap strokes
+                };
+              }).filter(p => p.name !== `Player ${p.id}`)} // Only include players with real names
               locked={isLocked}
               onUpdateScores={(playerScores) => {
                 // Convert player scores to the expected ScoreData format for the API
