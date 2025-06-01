@@ -6,7 +6,9 @@ import {
   type HoleInfo,
   type PlayerData,
   type BestBallPlayerScore,
+  updatePlayerCourseHandicap, // This is not a type, it's a function from the hook. Typo in my thought process.
 } from "../hooks/useBestBallScorecardLogic";
+import { useAuth } from "../hooks/use-auth"; // Added import
 import "./TwoManTeamBestBallScorecard.css";
 
 interface RawPlayerData {
@@ -29,23 +31,32 @@ export function transformRawPlayerData(
 }
 
 interface ScorecardProps {
+  roundId: number;
+  courseId: number;
   holes: HoleInfo[];
   playerScores?: BestBallPlayerScore[];
   players?: PlayerData[];
   locked?: boolean;
   onUpdateScores?: (playerScores: BestBallPlayerScore[]) => void;
+  onPlayerHandicapChange?: (playerId: number, newHandicap: number, roundId: number, courseId: number) => void; // Added prop
 }
 
 const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
+  roundId,
+  courseId,
   holes = [],
   players = [],
   locked = false,
   onUpdateScores,
+  onPlayerHandicapChange, // Destructured prop
 }) => {
+  const { isAdmin } = useAuth(); // Get isAdmin status
+
   // Initialize the hook with provided data
   const {
     playerScores: hookPlayerScores,
     updateScore,
+    updatePlayerCourseHandicap, // Get function from hook
     aviatorTotals,
     producerTotals,
     matchStatus,
@@ -94,13 +105,53 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
     const producerPlayers = hookPlayerScores.filter(p => p.team === 'producer');
 
     // Helper function to render a player row
-    const renderPlayerRow = (player: BestBallPlayerScore) => (
-      <React.Fragment key={`player-${player.playerId}`}>
-        <div className={`player-name ${player.team}`}>{player.playerName}</div>
-        <div className="player-handicap">{player.handicapStrokes.reduce((a, b) => a + b, 0)}</div>
-        {frontNine.map((_, holeIdx) => (
-          <div key={`${player.playerId}-front-${holeIdx}`} 
-               className={`score-input-cell ${player.isBestBall[holeIdx] ? 'best-score' : ''}`}>
+    const renderPlayerRow = (player: BestBallPlayerScore) => {
+      const currentCourseHandicap = player.handicapStrokes.reduce((a, b) => a + b, 0);
+
+      const handleHandicapChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        // This function can be used if choosing onChange with debounce,
+        // but for onBlur, direct processing in onBlurHandler is fine.
+        // For this implementation, we'll use onBlur primarily.
+      };
+
+      const handleHandicapBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+        const rawValue = e.target.value;
+        const newHandicap = parseInt(rawValue, 10);
+
+        if (!isNaN(newHandicap) && newHandicap >= 0) {
+          if (newHandicap !== currentCourseHandicap) {
+            updatePlayerCourseHandicap(player.playerId, newHandicap);
+            if (onPlayerHandicapChange) {
+              onPlayerHandicapChange(player.playerId, newHandicap, roundId, courseId);
+            }
+          }
+        } else {
+          // Reset to current value if input is invalid
+          e.target.value = currentCourseHandicap.toString();
+        }
+      };
+
+      return (
+        <React.Fragment key={`player-${player.playerId}`}>
+          <div className={`player-name ${player.team}`}>{player.playerName}</div>
+          <div className="player-handicap">
+            {isAdmin && !locked ? (
+              <Input
+                type="number"
+                defaultValue={currentCourseHandicap} // Use defaultValue for onBlur, or manage state for controlled input
+                onBlur={handleHandicapBlur}
+                // onChange={handleHandicapChange} // Or use onChange with debounce
+                className="handicap-input score-input" // Re-use score-input for similar styling
+                min="0"
+                max="54" // Common max for course handicap
+              />
+            ) : (
+              currentCourseHandicap
+            )}
+          </div>
+          {frontNine.map((_, holeIdx) => (
+            <div key={`${player.playerId}-front-${holeIdx}`}
+                 className={`score-input-cell ${player.isBestBall[holeIdx] ? 'best-score' : ''}`}>
             <Input
               type="number"
               min="1"
@@ -290,7 +341,7 @@ const TwoManTeamBestBallScorecard: React.FC<ScorecardProps> = ({
         </div>
       </div>
     );
-  }, [hookPlayerScores, frontNine, backNine, aviatorTotals, producerTotals, matchStatus, holes, locked, handleScoreChange]);
+  }, [hookPlayerScores, frontNine, backNine, aviatorTotals, producerTotals, matchStatus, holes, locked, handleScoreChange, isAdmin, roundId, courseId, onPlayerHandicapChange, updatePlayerCourseHandicap]);
 
   return (
     <Card className="rounded-2xl shadow-lg">

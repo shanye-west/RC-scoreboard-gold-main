@@ -73,6 +73,7 @@ export interface UseBestBallScorecardLogicReturn {
   setPlayers: (players: PlayerData[]) => void;
   setHoles: (holes: HoleInfo[]) => void;
   updateScore: (playerId: number, holeNumber: number, grossScore: number) => void;
+  updatePlayerCourseHandicap: (playerId: number, newHandicap: number) => void;
   clearScores: () => void;
   resetScorecard: () => void;
 
@@ -176,6 +177,22 @@ export function useBestBallScorecardLogic(
     setHolesState(options?.initialHoles || []);
     setGrossScoresState({});
   }, [options]);
+
+  const updatePlayerCourseHandicap = useCallback((playerId: number, newHandicap: number) => {
+    if (Number.isNaN(newHandicap) || newHandicap < 0) {
+      // Optionally, add more robust validation or error handling
+      console.warn("Invalid handicap value provided.");
+      return;
+    }
+    const validatedHandicap = Math.floor(newHandicap); // Ensure it's an integer
+
+    setPlayersState(prevPlayers =>
+      prevPlayers.map(player =>
+        player.id === playerId ? { ...player, courseHandicap: validatedHandicap } : player
+      )
+    );
+    // No need to reset grossScoresState here as scores are independent of handicap changes
+  }, []);
 
   // Calculate detailed hole results
   const detailedHoleResults = useMemo((): HoleResultDetails[] => {
@@ -399,6 +416,7 @@ export function useBestBallScorecardLogic(
     setPlayers,
     setHoles,
     updateScore,
+    updatePlayerCourseHandicap,
     clearScores,
     resetScorecard,
 
