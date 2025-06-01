@@ -6,7 +6,6 @@ import {
   type HoleInfo,
   type PlayerData,
   type BestBallPlayerScore,
-  updatePlayerCourseHandicap, // This is not a type, it's a function from the hook. Typo in my thought process.
 } from "../hooks/useBestBallScorecardLogic";
 import { useAuth } from "../hooks/use-auth"; // Added import
 import "./TwoManTeamBestBallScorecard.css";
