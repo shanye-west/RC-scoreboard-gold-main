@@ -47,6 +47,39 @@ describe('useBestBallScorecardLogic', () => {
     });
   });
 
+  describe('setup completion', () => {
+    it('should reflect setup status based on players and holes', () => {
+      const { result } = renderHook(() =>
+        useBestBallScorecardLogic({ roundId: 1, courseId: 1 })
+      );
+
+      // No players or holes initially
+      expect(result.current.isSetupComplete).toBe(false);
+
+      act(() => {
+        result.current.setPlayers(mockPlayers);
+      });
+      // Still false because holes are missing
+      expect(result.current.isSetupComplete).toBe(false);
+
+      act(() => {
+        result.current.setHoles(mockHoles);
+      });
+      expect(result.current.isSetupComplete).toBe(true);
+
+      act(() => {
+        result.current.setPlayers(mockPlayers.slice(0, 3));
+      });
+      // Missing one player so setup incomplete
+      expect(result.current.isSetupComplete).toBe(false);
+
+      act(() => {
+        result.current.setPlayers(mockPlayers);
+      });
+      expect(result.current.isSetupComplete).toBe(true);
+    });
+  });
+
   describe('score management', () => {
     it('should update player score correctly', async () => {
       const { result } = renderHook(() => useBestBallScorecardLogic(defaultProps));
