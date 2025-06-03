@@ -321,23 +321,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // GET /api/matches/:id/scores
+  app.get("/api/matches/:id/scores", async (req, res, next) => {
+    try {
+      const matchId = Number(req.params.id);
+      if (isNaN(matchId)) {
+        return res.status(400).json({ message: "Invalid match id" });
+      }
+      const allScores = await storage.getScoresByMatch(matchId);
+      res.json(allScores);
+    } catch (err) {
+      next(err);
+    }
+  });
+
   app.get("/api/matches/:id", async (req, res) => {
     const matchId = parseInt(req.params.id);
     // Use getMatchWithParticipants instead of getMatch to get all player info
     const match = await storage.getMatchWithParticipants(matchId);
-    // GET /api/matches/:id/scores
-    app.get("/api/matches/:id/scores", async (req, res, next) => {
-      try {
-        const matchId = Number(req.params.id);
-        if (isNaN(matchId)) {
-          return res.status(400).json({ message: "Invalid match id" });
-        }
-        const allScores = await storage.getScoresByMatch(matchId);
-        res.json(allScores);
-      } catch (err) {
-        next(err);
-      }
-    });
 
     if (!match) {
       return res.status(404).json({ message: "Match not found" });
