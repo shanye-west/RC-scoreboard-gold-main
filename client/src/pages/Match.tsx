@@ -4,6 +4,8 @@ import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import MatchHeader from "@/components/MatchHeader";
 import TwoManTeamBestBallScorecard, { transformRawPlayerData } from "@/components/TwoManTeamBestBallScorecard";
+import TwoManTeamScrambleScorecard from "@/components/TwoManTeamScrambleScorecard";
+import TwoManTeamShambleScorecard from "@/components/TwoManTeamShambleScorecard";
 import TwoManTeamGrossScorecard from "@/components/TwoManTeamGrossScorecard";
 import FourManTeamScrambleScorecard from "@/components/FourManTeamScrambleScorecard";
 import { apiRequest } from "@/lib/queryClient";
@@ -636,7 +638,37 @@ const Match = ({ id }: { id: number }) => {
               }}
             />
           )}
-          {round?.matchType === "2-man gross" && (
+          {(round?.matchType === "2-man Team Scramble" || round?.matchType === "2-man gross") && (
+            <TwoManTeamScrambleScorecard
+              holes={(holes || []).map(hole => ({
+                hole_number: hole.number,
+                par: hole.par,
+                ...(hole.id !== undefined ? { id: hole.id } : {})
+              }))}
+              scores={(scores || []).map(score => ({
+                holeNumber: score.holeNumber,
+                aviatorScore: score.aviatorScore,
+                producerScore: score.producerScore
+              }))}
+              locked={isLocked}
+            />
+          )}
+          {round?.matchType === "2-man Team Shamble" && (
+            <TwoManTeamShambleScorecard
+              holes={(holes || []).map(hole => ({
+                hole_number: hole.number,
+                par: hole.par,
+                ...(hole.id !== undefined ? { id: hole.id } : {})
+              }))}
+              scores={(scores || []).map(score => ({
+                holeNumber: score.holeNumber,
+                aviatorScore: score.aviatorScore,
+                producerScore: score.producerScore
+              }))}
+              locked={isLocked}
+            />
+          )}
+          {(round?.matchType === "2-man gross") && (
             <TwoManTeamGrossScorecard
               holes={(holes || []).map(hole => ({
                 hole_number: hole.number,
@@ -651,7 +683,7 @@ const Match = ({ id }: { id: number }) => {
               locked={isLocked}
             />
           )}
-          {round?.matchType === "4-man scramble" && (
+          {(round?.matchType === "4-man Team Scramble" || round?.matchType === "4-man scramble") && (
             <FourManTeamScrambleScorecard
               holes={(holes || []).map(hole => ({
                 hole_number: hole.number,

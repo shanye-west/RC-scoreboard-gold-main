@@ -16,7 +16,7 @@ interface ScorecardProps {
   onUpdateScores?: (scores: HoleScore[]) => void;
 }
 
-const FourManTeamScrambleScorecard: React.FC<ScorecardProps> = ({
+const TwoManTeamShambleScorecard: React.FC<ScorecardProps> = ({
   holes = [],
   scores = [],
   locked = false,
@@ -39,6 +39,7 @@ const FourManTeamScrambleScorecard: React.FC<ScorecardProps> = ({
     );
     return producerTeam?.id || 2;
   };
+
   const handleScoreChange = (holeIndex: number, team: 'aviator' | 'producer', value: string) => {
     const newScores = [...scores];
     const score = parseInt(value, 10);
@@ -55,7 +56,7 @@ const FourManTeamScrambleScorecard: React.FC<ScorecardProps> = ({
   return (
     <Card className="rounded-2xl shadow p-4">
       <CardHeader>
-        <CardTitle>4-Man Team Scramble Scorecard</CardTitle>
+        <CardTitle>2-Man Team Shamble Scorecard</CardTitle>
       </CardHeader>
       <CardContent>
         <table className="w-full text-sm">
@@ -97,4 +98,4 @@ const FourManTeamScrambleScorecard: React.FC<ScorecardProps> = ({
   );
 };
 
-export default FourManTeamScrambleScorecard;
+export default TwoManTeamShambleScorecard;
