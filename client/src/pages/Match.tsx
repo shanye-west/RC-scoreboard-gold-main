@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { Skeleton } from "@/components/ui/skeleton";
 import MatchHeader from "@/components/MatchHeader";
 import TwoManTeamBestBallScorecard, { transformRawPlayerData } from "@/components/TwoManTeamBestBallScorecard";
+import TwoManTeamShambleScorecard from "@/components/TwoManTeamShambleScorecard";
 import TwoManTeamGrossScorecard from "@/components/TwoManTeamGrossScorecard";
 import FourManTeamScrambleScorecard from "@/components/FourManTeamScrambleScorecard";
 import { apiRequest } from "@/lib/queryClient";
@@ -634,6 +635,28 @@ const Match = ({ id }: { id: number }) => {
                 // Convert player scores to the expected ScoreData format for the API
                 console.log('Player scores updated:', playerScores);
               }}
+            />
+          )}
+          {round?.matchType === "2-man Team Shamble" && (
+            <TwoManTeamShambleScorecard
+              roundId={match?.roundId || 0}
+              courseId={round?.courseId || 0}
+              holes={(holes || []).map(hole => ({
+                hole_number: hole.number,
+                par: hole.par,
+                handicap: (hole as any).handicapRank || 1,
+                ...(hole.id !== undefined ? { id: hole.id } : {})
+              }))}
+              players={(participants || []).map(p => {
+                const player = players.find(player => player.id === p.playerId);
+                return {
+                  id: p.playerId,
+                  name: player?.name || `Player ${p.playerId}`,
+                  team: (p.team === 'aviators' ? 'aviator' : 'producer') as 'aviator' | 'producer',
+                  courseHandicap: 0
+                };
+              }).filter(p => p.name !== `Player ${p.id}`)}
+              locked={isLocked}
             />
           )}
           {round?.matchType === "2-man gross" && (

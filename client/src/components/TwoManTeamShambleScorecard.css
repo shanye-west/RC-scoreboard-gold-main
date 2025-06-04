@@ -1,0 +1,400 @@
+/* Two Man Team Best Ball Scorecard - Table-based Layout */
+.scorecard-container {
+  margin: 0;
+  padding: 16px;
+  font-family: var(--font-sans);
+  overflow-x: auto;
+}
+
+.scorecard-table-wrapper {
+  overflow-x: auto;
+  border-radius: var(--radius);
+  border: 2px solid hsl(var(--border));
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.scorecard-table {
+  width: 100%;
+  min-width: 1200px;
+  border-collapse: collapse;
+  background-color: hsl(var(--background));
+  font-size: 14px;
+}
+
+.scorecard-table th,
+.scorecard-table td {
+  padding: 8px 4px;
+  text-align: center;
+  border-right: 1px solid hsl(var(--border));
+  border-bottom: 1px solid hsl(var(--border));
+  font-weight: 500;
+  min-width: 40px;
+}
+
+/* Headers */
+.player-header,
+.total-header {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  font-weight: 700;
+  text-align: left;
+  padding-left: 12px;
+  font-size: 12px;
+  min-width: 130px;
+}
+
+.hole-header {
+  background-color: hsl(var(--muted));
+  color: hsl(var(--muted-foreground));
+  font-weight: 700;
+  font-size: 12px;
+  padding: 4px;
+}
+
+.hole-number {
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.hole-handicap {
+  font-size: 10px;
+  color: hsl(var(--muted-foreground));
+  margin-top: 2px;
+}
+
+/* Player rows */
+.player-row {
+  background-color: hsl(var(--background));
+}
+
+.player-name {
+  text-align: left;
+  padding-left: 12px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 600;
+  font-size: 13px;
+  min-width: 130px;
+}
+
+.score-cell {
+  position: relative;
+  padding: 2px;
+  background-color: hsl(var(--background));
+}
+
+.score-input {
+  width: 100%;
+  height: 32px;
+  border: 1px solid hsl(var(--border));
+  text-align: center;
+  font-size: 14px;
+  font-weight: 600;
+  background: transparent;
+  outline: none;
+  border-radius: 4px;
+}
+
+.score-input:focus {
+  background-color: rgba(59, 130, 246, 0.1);
+  outline: 2px solid #3b82f6;
+  border-color: #3b82f6;
+}
+
+.score-display {
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.total-cell {
+  font-weight: 700;
+  background-color: hsl(var(--muted));
+  color: hsl(var(--foreground));
+  font-size: 14px;
+}
+
+/* Team rows */
+.team-row {
+  background-color: hsl(var(--accent));
+  font-weight: 700;
+}
+
+.team-name {
+  text-align: left;
+  padding-left: 12px;
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: hsl(var(--accent-foreground));
+}
+
+.team-score-cell {
+  font-weight: 700;
+  color: hsl(var(--accent-foreground));
+  background-color: hsl(var(--accent));
+}
+
+.team-total-cell {
+  font-weight: 700;
+  background-color: hsl(var(--accent));
+  color: hsl(var(--accent-foreground));
+  font-size: 14px;
+}
+
+/* Match status */
+.match-status {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid hsl(var(--border));
+  border-radius: var(--radius);
+  background-color: hsl(var(--muted));
+  text-align: center;
+}
+
+.match-status h3 {
+  margin: 0 0 8px 0;
+  font-size: 16px;
+  font-weight: 700;
+  color: hsl(var(--foreground));
+}
+
+.match-status p {
+  margin: 4px 0;
+  font-size: 14px;
+  color: hsl(var(--muted-foreground));
+}
+
+.score-details {
+  margin-top: 8px;
+  display: flex;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.score-details p {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+/* Team color variations for player names */
+.player-name.aviator {
+  color: var(--aviator-text);
+  background-color: rgba(59, 130, 246, 0.05);
+  border-left: 4px solid var(--aviator-accent);
+}
+
+.player-name.producer {
+  color: var(--producer-text);
+  background-color: rgba(239, 68, 68, 0.05);
+  border-left: 4px solid var(--producer-accent);
+}
+
+/* Best score highlighting */
+.score-cell.best-score {
+  background-color: rgba(34, 197, 94, 0.15);
+  border: 2px solid rgba(34, 197, 94, 0.4);
+}
+
+.score-cell.best-score .score-input {
+  font-weight: 700;
+  color: #059669;
+}
+
+/* Team total variations */
+.team-total-cell.aviators {
+  background-color: var(--aviator-accent);
+  color: white;
+}
+
+.team-total-cell.producers {
+  background-color: var(--producer-accent);
+  color: white;
+}
+
+/* CSS Variables for team colors */
+:root {
+  --aviator-bg: #dbeafe;
+  --aviator-text: #1e3a8a;
+  --aviator-accent: #3b82f6;
+  
+  --producer-bg: #fee2e2;
+  --producer-text: #7f1d1d;
+  --producer-accent: #ef4444;
+}
+
+/* Mobile responsive styles for table layout */
+@media (max-width: 1024px) {
+  .scorecard-container {
+    padding: 8px;
+  }
+  
+  .scorecard-table {
+    font-size: 12px;
+    min-width: 1000px;
+  }
+  
+  .scorecard-table th,
+  .scorecard-table td {
+    padding: 6px 3px;
+    min-width: 35px;
+  }
+
+  .player-header,
+  .total-header,
+  .player-name {
+    font-size: 11px;
+    padding-left: 8px;
+    min-width: 100px;
+  }
+
+  .score-input {
+    font-size: 12px;
+    height: 28px;
+  }
+  
+  .hole-number {
+    font-size: 11px;
+  }
+  
+  .hole-handicap {
+    font-size: 9px;
+  }
+}
+
+@media (max-width: 768px) {
+  .scorecard-container {
+    padding: 4px;
+  }
+  
+  .scorecard-table {
+    font-size: 11px;
+    min-width: 900px;
+  }
+  
+  .scorecard-table th,
+  .scorecard-table td {
+    padding: 4px 2px;
+    min-width: 30px;
+  }
+
+  .player-header,
+  .total-header,
+  .player-name {
+    font-size: 10px;
+    padding-left: 6px;
+    min-width: 90px;
+  }
+
+  .score-input {
+    font-size: 11px;
+    height: 24px;
+  }
+  
+  .hole-number {
+    font-size: 10px;
+  }
+  
+  .hole-handicap {
+    font-size: 8px;
+  }
+  
+  .net-score {
+    font-size: 8px;
+  }
+  
+  .match-status {
+    padding: 12px;
+    margin-top: 12px;
+  }
+  
+  .match-status h3 {
+    font-size: 14px;
+  }
+  
+  .match-status p {
+    font-size: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .scorecard-container {
+    padding: 2px;
+  }
+  
+  .scorecard-table {
+    font-size: 10px;
+    min-width: 800px;
+  }
+  
+  .scorecard-table th,
+  .scorecard-table td {
+    padding: 3px 1px;
+    min-width: 25px;
+  }
+
+  .player-header,
+  .total-header,
+  .player-name {
+    font-size: 9px;
+    padding-left: 4px;
+    min-width: 80px;
+  }
+
+  .score-input {
+    font-size: 10px;
+    height: 22px;
+  }
+  
+  .hole-number {
+    font-size: 9px;
+  }
+  
+  .hole-handicap {
+    font-size: 7px;
+  }
+  
+  .total-cell,
+  .team-total-cell {
+    font-size: 10px;
+  }
+  
+  .match-status {
+    padding: 8px;
+    margin-top: 8px;
+  }
+  
+  .match-status h3 {
+    font-size: 12px;
+  }
+  
+  .match-status p {
+    font-size: 10px;
+  }
+  
+  .score-details {
+    flex-direction: column;
+    gap: 4px;
+  }
+}
+
+/* Scrollbar styling for horizontal scroll */
+.scorecard-table-wrapper::-webkit-scrollbar {
+  height: 8px;
+}
+
+.scorecard-table-wrapper::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+  border-radius: 4px;
+}
+
+.scorecard-table-wrapper::-webkit-scrollbar-thumb {
+  background: hsl(var(--border));
+  border-radius: 4px;
+}
+
+.scorecard-table-wrapper::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--muted-foreground));
+}
